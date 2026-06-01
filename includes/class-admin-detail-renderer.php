@@ -126,7 +126,7 @@ class PCD_Calculator_Admin_Detail_Renderer {
 		);
 
 		if ( ! empty( $payload['rawFormData'] ) && is_array( $payload['rawFormData'] ) ) {
-			self::section( __( 'Raw form fields', 'pcd-pricing-calculator' ), $payload['rawFormData'] );
+			self::section( __( 'Raw form fields', 'pcd-pricing-calculator' ), self::sanitize_raw_form_pairs( $payload['rawFormData'] ) );
 		}
 	}
 
@@ -213,9 +213,9 @@ class PCD_Calculator_Admin_Detail_Renderer {
 		$loc_label = isset( $location['label'] ) ? $location['label'] : ( isset( $location['locationLabel'] ) ? $location['locationLabel'] : '' );
 		$sqm       = null !== $row->property_sqm ? $row->property_sqm . ' sqm' : '—';
 		if ( isset( $size['sizeM2'] ) && '—' !== $size['sizeM2'] ) {
-			$sqm = $size['sizeM2'] . ' sqm';
+			$sqm = esc_html( (string) $size['sizeM2'] ) . ' sqm';
 			if ( ! empty( $size['sizeM2Input'] ) && $size['sizeM2Input'] !== $size['sizeM2'] ) {
-				$sqm .= ' (' . __( 'input', 'pcd-pricing-calculator' ) . ': ' . $size['sizeM2Input'] . ')';
+				$sqm .= ' (' . esc_html__( 'input', 'pcd-pricing-calculator' ) . ': ' . esc_html( (string) $size['sizeM2Input'] ) . ')';
 			}
 		}
 
@@ -291,18 +291,60 @@ class PCD_Calculator_Admin_Detail_Renderer {
 	}
 
 	/**
-	 * @param array $pairs Label => value (HTML allowed in values).
+	 * @param array $pairs Label => value (trusted HTML only via wp_kses).
 	 */
 	private static function kv_list( array $pairs ) {
 		echo '<ul class="pcd-kv-list">';
 		foreach ( $pairs as $label => $value ) {
 			if ( is_array( $value ) ) {
 				$value = esc_html( wp_json_encode( $value ) );
+			} else {
+				$value = wp_kses( (string) $value, self::allowed_value_html() );
 			}
 			echo '<li><span class="pcd-k">' . esc_html( (string) $label ) . '</span>';
-			echo '<span class="pcd-v">' . ( is_string( $value ) && false !== strpos( $value, '<' ) ? $value : esc_html( (string) $value ) ) . '</span></li>';
+			echo '<span class="pcd-v">' . $value . '</span></li>';
 		}
 		echo '</ul>';
+	}
+
+	/**
+	 * Sanitize user-submitted raw form key/value pairs for safe admin display.
+	 *
+	 * @param array $raw Raw form data from payload.
+	 * @return array
+	 */
+	private static function sanitize_raw_form_pairs( array $raw ) {
+		$out = array();
+		foreach ( $raw as $key => $value ) {
+			$label = sanitize_text_field( (string) $key );
+			if ( '' === $label ) {
+				continue;
+			}
+			if ( is_scalar( $value ) ) {
+				$out[ $label ] = sanitize_text_field( (string) $value );
+			} else {
+				$out[ $label ] = wp_json_encode( $value );
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * HTML tags allowed in admin detail values (plugin-generated markup only).
+	 *
+	 * @return array
+	 */
+	private static function allowed_value_html() {
+		return array(
+			'strong' => array(),
+			'span'   => array(
+				'class' => true,
+			),
+			'a'      => array(
+				'class' => true,
+				'href'  => true,
+			),
+		);
 	}
 
 	/**
@@ -468,12 +510,12 @@ class PCD_Calculator_Admin_Detail_Renderer {
 	 */
 	private static function format_list( $list ) {
 		if ( ! is_array( $list ) ) {
-			return (string) $list;
+			return sanitize_text_field( (string) $list );
 		}
 		if ( empty( $list ) ) {
 			return '—';
 		}
-		return implode( ', ', array_map( 'strval', $list ) );
+		return implode( ', ', array_map( 'sanitize_text_field', array_map( 'strval', $list ) ) );
 	}
 
 	/**

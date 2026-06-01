@@ -777,6 +777,16 @@
           }
 
           /* Contact Form Styles */
+          .pcd-hp {
+            position: absolute;
+            left: -10000px;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+          }
+
           .pricing-calculator .contact-fields {
             margin-bottom: 1.5rem !important;
             padding: 1.5rem !important;
@@ -1219,6 +1229,10 @@
                     <label for="userAddress">Address <span style="color: #dc2626;">*</span></label>
                     <input type="text" id="userAddress" name="userAddress" placeholder="Enter property or site address">
                     <span class="error-message">Please enter the address</span>
+                  </div>
+                  <div class="pcd-hp" aria-hidden="true">
+                    <label for="pcdHpWebsite">Website</label>
+                    <input type="text" id="pcdHpWebsite" name="website" tabindex="-1" autocomplete="off" value="">
                   </div>
                 </div>
           
@@ -2717,6 +2731,16 @@
         font-weight: 700;
       }
   
+      .pcx-app .pcd-hp {
+        position: absolute;
+        left: -10000px;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        opacity: 0;
+        pointer-events: none;
+      }
+
       .pcx-calculator .pcx-contact {
         margin: 0 0 18px;
         padding: 18px;
@@ -3506,6 +3530,10 @@
                   <input type="text" id="pcxUserAddress" placeholder="Enter property or site address">
                   <span class="pcx-error">Please enter the address.</span>
                 </div>
+                <div class="pcd-hp" aria-hidden="true">
+                  <label for="pcxHpWebsite">Website</label>
+                  <input type="text" id="pcxHpWebsite" tabindex="-1" autocomplete="off" value="">
+                </div>
               </div>
   
               <button type="submit" class="pcx-submit">Submit Quote Request</button>
@@ -4143,8 +4171,10 @@
         function buildPayload() {
           const existingResult = latestQuote.existingDrawings.result || {};
           const proposedResult = latestQuote.proposedDrawings.result || {};
+          const hpEl = document.getElementById("pcxHpWebsite");
           return {
             calculatorMode: "complex",
+            website: hpEl ? hpEl.value : "",
             contact: {
               name: els.userName.value.trim(),
               email: els.userEmail.value.trim(),

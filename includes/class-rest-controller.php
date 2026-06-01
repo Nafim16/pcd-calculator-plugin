@@ -71,6 +71,14 @@ class PCD_Calculator_REST_Controller {
 			);
 		}
 
+		$rate = PCD_Calculator_Rate_Limiter::check();
+		if ( is_wp_error( $rate ) ) {
+			return new WP_REST_Response(
+				array( 'success' => false, 'message' => $rate->get_error_message() ),
+				429
+			);
+		}
+
 		$id = PCD_Calculator_Submission_Repository::insert_from_payload( $payload );
 		if ( ! $id ) {
 			return new WP_REST_Response(
@@ -104,6 +112,7 @@ class PCD_Calculator_REST_Controller {
 		$name    = isset( $contact['name'] ) ? trim( (string) $contact['name'] ) : '';
 		$email   = isset( $contact['email'] ) ? trim( (string) $contact['email'] ) : '';
 		$address = isset( $contact['address'] ) ? trim( (string) $contact['address'] ) : '';
+		$phone   = isset( $contact['phone'] ) ? trim( (string) $contact['phone'] ) : '';
 
 		if ( '' === $name ) {
 			return new WP_Error( 'missing_name', __( 'Name is required.', 'pcd-pricing-calculator' ) );
@@ -113,6 +122,24 @@ class PCD_Calculator_REST_Controller {
 		}
 		if ( '' === $address ) {
 			return new WP_Error( 'missing_address', __( 'Address is required.', 'pcd-pricing-calculator' ) );
+		}
+
+		if ( strlen( $name ) > 200 ) {
+			return new WP_Error( 'name_too_long', __( 'Name is too long.', 'pcd-pricing-calculator' ) );
+		}
+		if ( strlen( $email ) > 254 ) {
+			return new WP_Error( 'email_too_long', __( 'Email is too long.', 'pcd-pricing-calculator' ) );
+		}
+		if ( strlen( $phone ) > 64 ) {
+			return new WP_Error( 'phone_too_long', __( 'Phone number is too long.', 'pcd-pricing-calculator' ) );
+		}
+		if ( strlen( $address ) > 2000 ) {
+			return new WP_Error( 'address_too_long', __( 'Address is too long.', 'pcd-pricing-calculator' ) );
+		}
+
+		// Honeypot: bots often fill hidden fields.
+		if ( ! empty( $payload['website'] ) || ! empty( $payload['_hp'] ) ) {
+			return new WP_Error( 'spam', __( 'Submission rejected.', 'pcd-pricing-calculator' ) );
 		}
 
 		return true;
