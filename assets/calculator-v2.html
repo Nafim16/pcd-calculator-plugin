@@ -295,15 +295,57 @@
             border-bottom: 1px solid var(--border) !important;
           }
     
-          @media (max-width: 480px) {
+          @media (max-width: 640px) {
             .pricing-calculator .service-row {
-              flex-direction: column !important;
-              align-items: flex-start !important;
-              gap: 0.75rem !important;
+              flex-direction: row !important;
+              align-items: center !important;
+              gap: 0.5rem !important;
+              padding: 0.65rem 0 !important;
             }
-      
+
             .pricing-calculator .service-row .toggle-container {
-              align-self: flex-end !important;
+              align-self: center !important;
+              flex-shrink: 0 !important;
+              width: 44px !important;
+              height: 24px !important;
+            }
+
+            .pricing-calculator .service-row .toggle-switch:before {
+              height: 16px !important;
+              width: 16px !important;
+            }
+
+            .pricing-calculator .service-row .toggle-input:checked + .toggle-switch:before {
+              transform: translateX(18px) !important;
+            }
+
+            .pricing-calculator .service-info {
+              flex: 1 1 auto !important;
+              min-width: 0 !important;
+              gap: 0.5rem !important;
+              align-items: center !important;
+            }
+
+            .pricing-calculator .service-icon {
+              width: 32px !important;
+              height: 32px !important;
+              font-size: 0.95rem !important;
+              flex-shrink: 0 !important;
+            }
+
+            .pricing-calculator .service-text {
+              min-width: 0 !important;
+            }
+
+            .pricing-calculator .service-text h3 {
+              font-size: 0.8rem !important;
+              margin-bottom: 0.1rem !important;
+              line-height: 1.2 !important;
+            }
+
+            .pricing-calculator .service-text p {
+              font-size: 0.68rem !important;
+              line-height: 1.2 !important;
             }
           }
     
@@ -2960,6 +3002,51 @@
   
         .pcx-calculator .pcx-toast.hide {
           transform: translateY(-100px);
+        }
+
+        .pcx-calculator .pcx-service-row {
+          flex-direction: row;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.65rem 0;
+        }
+
+        .pcx-calculator .pcx-service-info {
+          flex: 1 1 auto;
+          min-width: 0;
+          gap: 0.5rem;
+          align-items: center;
+        }
+
+        .pcx-calculator .pcx-service-icon {
+          width: 32px;
+          height: 32px;
+          font-size: 0.95rem;
+        }
+
+        .pcx-calculator .pcx-service-text h3,
+        .pcx-calculator .pcx-service-text h4 {
+          font-size: 0.8rem;
+          margin-bottom: 0.1rem;
+        }
+
+        .pcx-calculator .pcx-service-text p {
+          font-size: 0.68rem;
+          line-height: 1.2;
+        }
+
+        .pcx-calculator .pcx-toggle {
+          width: 44px;
+          height: 24px;
+        }
+
+        .pcx-calculator .pcx-toggle span::before {
+          width: 16px;
+          height: 16px;
+        }
+
+        .pcx-calculator .pcx-toggle input:checked + span::before {
+          transform: translateX(18px);
         }
       }
     </style>
