@@ -18,6 +18,8 @@ Embeds the PCD simple/complex pricing calculator and stores quote submissions in
 
 Go to **PCD Quotes** in the WordPress admin to view, inspect, and delete submissions.
 
+**PCD Quotes → Email notifications** — enable or disable admin emails for new submissions, and set one or more recipient addresses (comma-separated). Defaults to the WordPress admin email.
+
 == Notes ==
 
 * Submissions are stored in the database table `wp_pcd_quote_submissions` (prefix may vary).

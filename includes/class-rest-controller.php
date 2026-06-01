@@ -79,6 +79,8 @@ class PCD_Calculator_REST_Controller {
 			);
 		}
 
+		PCD_Calculator_Submission_Notification::send_for_submission( $id, $payload );
+
 		return new WP_REST_Response(
 			array(
 				'success' => true,

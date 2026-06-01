@@ -25,6 +25,8 @@ require_once PCD_CALCULATOR_PLUGIN_DIR . 'includes/class-list-table.php';
 require_once PCD_CALCULATOR_PLUGIN_DIR . 'includes/class-pricing-settings.php';
 require_once PCD_CALCULATOR_PLUGIN_DIR . 'includes/class-admin-menu.php';
 require_once PCD_CALCULATOR_PLUGIN_DIR . 'includes/class-admin-pricing.php';
+require_once PCD_CALCULATOR_PLUGIN_DIR . 'includes/class-submission-notification.php';
+require_once PCD_CALCULATOR_PLUGIN_DIR . 'includes/class-admin-notifications.php';
 
 register_activation_hook( __FILE__, array( 'PCD_Calculator_Activator', 'activate' ) );
 
@@ -55,6 +57,7 @@ final class PCD_Pricing_Calculator_Plugin {
 		if ( is_admin() ) {
 			PCD_Calculator_Admin_Menu::init();
 			PCD_Calculator_Admin_Pricing::init();
+			PCD_Calculator_Admin_Notifications::init();
 		}
 	}
 
