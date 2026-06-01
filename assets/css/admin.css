@@ -1,0 +1,353 @@
+/* PCD Calculator — WordPress admin styles */
+
+/* —— List page (submissions table) —— */
+.pcd-quotes-wrap .pcd-subtitle {
+	display: inline-block;
+	margin-left: 10px;
+	padding: 4px 10px;
+	font-size: 13px;
+	font-weight: 500;
+	color: #50575e;
+	background: #f0f0f1;
+	border-radius: 4px;
+	vertical-align: middle;
+}
+
+.pcd-quotes-wrap .wp-list-table .column-actions {
+	white-space: nowrap;
+}
+
+.pcd-quotes-wrap .wp-list-table .column-actions .button {
+	margin: 2px 4px 2px 0;
+	vertical-align: middle;
+}
+
+.pcd-quotes-wrap .wp-list-table .column-actions .button-link-delete {
+	margin-left: 4px;
+}
+
+.pcd-quotes-wrap .wp-list-table tfoot {
+	display: none;
+}
+
+.pcd-quotes-wrap .wp-list-table .column-id {
+	width: 56px;
+}
+
+.pcd-quotes-wrap .wp-list-table .column-contact_phone {
+	width: 120px;
+	white-space: nowrap;
+}
+
+.pcd-quotes-wrap .wp-list-table .column-contact_address {
+	min-width: 160px;
+	max-width: 220px;
+}
+
+.pcd-quotes-wrap .pcd-id-link {
+	font-weight: 600;
+	color: #08473c;
+	text-decoration: none;
+}
+
+.pcd-quotes-wrap .pcd-id-link:hover {
+	color: #06352b;
+	text-decoration: underline;
+}
+
+.pcd-quotes-wrap .pcd-phone-link {
+	color: #2271b1;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.pcd-quotes-wrap .pcd-address {
+	display: inline-block;
+	max-width: 220px;
+	line-height: 1.4;
+	word-break: break-word;
+}
+
+.pcd-quotes-wrap .wp-list-table .column-grand_total,
+.pcd-quotes-wrap .wp-list-table .column-property_sqm {
+	text-align: right;
+}
+
+.pcd-quotes-wrap .wp-list-table tbody td.column-grand_total,
+.pcd-quotes-wrap .wp-list-table tbody td.column-property_sqm {
+	font-weight: 600;
+}
+
+.pcd-quotes-wrap .wp-list-table tbody td.column-grand_total {
+	color: #08473c;
+}
+
+.pcd-date-cell {
+	display: block;
+	line-height: 1.4;
+}
+
+.pcd-date-cell .pcd-time {
+	display: block;
+	font-size: 12px;
+	color: #646970;
+}
+
+.pcd-muted {
+	color: #a7aaad;
+}
+
+.pcd-total-por {
+	color: #b45309;
+	font-weight: 600;
+}
+
+/* Type badges */
+.pcd-badge {
+	display: inline-block;
+	padding: 3px 10px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.4;
+}
+
+.pcd-badge-simple {
+	background: #dbeafe;
+	color: #1e40af;
+}
+
+.pcd-badge-complex {
+	background: #d1fae5;
+	color: #065f46;
+}
+
+/* —— View details page —— */
+.pcd-admin-detail {
+	max-width: 1100px;
+	margin-top: 8px;
+}
+
+.pcd-admin-detail .pcd-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin: 0 0 20px;
+}
+
+.pcd-admin-detail .pcd-hero {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	gap: 20px;
+	align-items: start;
+	background: linear-gradient(135deg, #08473c 0%, #0a5c4d 100%);
+	color: #fff;
+	border-radius: 12px;
+	padding: 24px 28px;
+	margin-bottom: 24px;
+	box-shadow: 0 4px 14px rgba(8, 71, 60, 0.2);
+}
+
+.pcd-admin-detail .pcd-hero-main h1 {
+	margin: 0 0 8px;
+	padding: 0;
+	font-size: 1.5rem;
+	font-weight: 600;
+	color: #fff;
+	line-height: 1.3;
+}
+
+.pcd-admin-detail .pcd-hero-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	font-size: 13px;
+	opacity: 0.95;
+}
+
+.pcd-admin-detail .pcd-hero-meta .pcd-badge {
+	background: rgba(255, 255, 255, 0.2);
+	color: #fff;
+}
+
+.pcd-admin-detail .pcd-hero-total {
+	text-align: right;
+}
+
+.pcd-admin-detail .pcd-hero-total-label {
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	opacity: 0.85;
+	margin-bottom: 4px;
+}
+
+.pcd-admin-detail .pcd-hero-total-value {
+	font-size: 2rem;
+	font-weight: 700;
+	line-height: 1.1;
+}
+
+.pcd-admin-detail .pcd-grid-3 {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 16px;
+	margin-bottom: 24px;
+}
+
+@media (max-width: 960px) {
+	.pcd-admin-detail .pcd-grid-3 {
+		grid-template-columns: 1fr;
+	}
+}
+
+.pcd-admin-detail .pcd-card {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 10px;
+	padding: 18px 20px;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.pcd-admin-detail .pcd-card-highlight {
+	border-color: #08473c;
+	background: #f8fcfb;
+}
+
+.pcd-admin-detail .pcd-card-title {
+	margin: 0 0 14px;
+	padding: 0 0 10px;
+	border-bottom: 1px solid #f0f0f1;
+	font-size: 14px;
+	font-weight: 600;
+	color: #08473c;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.pcd-admin-detail .pcd-kv-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.pcd-admin-detail .pcd-kv-list li {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 8px 0;
+	border-bottom: 1px solid #f6f7f7;
+	font-size: 13px;
+}
+
+.pcd-admin-detail .pcd-kv-list li:last-child {
+	border-bottom: none;
+	padding-bottom: 0;
+}
+
+.pcd-admin-detail .pcd-kv-list .pcd-k {
+	color: #646970;
+	flex: 0 0 42%;
+}
+
+.pcd-admin-detail .pcd-kv-list .pcd-v {
+	color: #1d2327;
+	font-weight: 500;
+	text-align: right;
+	word-break: break-word;
+}
+
+.pcd-admin-detail .pcd-section {
+	margin-bottom: 20px;
+}
+
+.pcd-admin-detail .pcd-section > h2 {
+	margin: 0 0 12px;
+	padding: 0;
+	font-size: 15px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.pcd-admin-detail .pcd-flag-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 8px 16px;
+}
+
+@media (max-width: 640px) {
+	.pcd-admin-detail .pcd-flag-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.pcd-admin-detail .pcd-hero {
+		grid-template-columns: 1fr;
+	}
+
+	.pcd-admin-detail .pcd-hero-total {
+		text-align: left;
+	}
+}
+
+.pcd-admin-detail .pcd-flag-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 8px 12px;
+	background: #f6f7f7;
+	border-radius: 8px;
+	font-size: 13px;
+}
+
+.pcd-admin-detail .pcd-pill {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+}
+
+.pcd-admin-detail .pcd-pill-yes {
+	background: #d1fae5;
+	color: #065f46;
+}
+
+.pcd-admin-detail .pcd-pill-no {
+	background: #f1f5f9;
+	color: #64748b;
+}
+
+.pcd-admin-detail .pcd-raw-json {
+	margin-top: 24px;
+	border: 1px solid #dcdcde;
+	border-radius: 10px;
+	overflow: hidden;
+	background: #fff;
+}
+
+.pcd-admin-detail .pcd-raw-json summary {
+	cursor: pointer;
+	padding: 14px 18px;
+	font-weight: 600;
+	background: #f6f7f7;
+}
+
+.pcd-admin-detail .pcd-raw-json pre {
+	margin: 0;
+	padding: 16px 18px;
+	max-height: 420px;
+	overflow: auto;
+	font-size: 12px;
+	line-height: 1.5;
+	background: #1e293b;
+	color: #e2e8f0;
+}
+
+.pcd-admin-detail a.pcd-email-link,
+.pcd-quotes-wrap a.pcd-email-link {
+	color: #2271b1;
+}

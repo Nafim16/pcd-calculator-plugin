@@ -1,0 +1,4373 @@
+<div class="pcx-app" id="pcx-app">
+    <script>
+      function pcdSubmitQuote(payload) {
+        if (!window.pcdCalculator || !window.pcdCalculator.restUrl) {
+          return Promise.reject(new Error('Calculator is not configured.'));
+        }
+        return fetch(window.pcdCalculator.restUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-WP-Nonce': window.pcdCalculator.nonce
+          },
+          body: JSON.stringify(payload)
+        }).then(function (response) {
+          return response.json().then(function (data) {
+            if (!response.ok) {
+              throw new Error((data && data.message) ? data.message : 'Submit failed');
+            }
+            return data;
+          });
+        });
+      }
+    </script>
+    <style>
+      .pcx-app {
+        --primary: #08473C;
+        --primary-dark: #06352b;
+        --bg: #fff;
+        --text: #0f172a;
+        --muted: #64748b;
+        --border: #e5e7eb;
+        --radius-md: 12px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .pcx-app .pcx-mode-bar-wrap {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 16px 16px 0;
+      }
+
+      .pcx-app .pcx-mode-bar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+
+      .pcx-app .pcx-mode-label-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .pcx-app .pcx-mode-label {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text);
+        line-height: 1.2;
+      }
+
+      .pcx-app .pcx-mode-hint {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-weight: 500;
+      }
+
+      /* Segmented toggle — sliding pill */
+      .pcx-app .pcx-mode-toggle {
+        position: relative;
+        display: inline-grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: stretch;
+        padding: 5px;
+        min-width: 300px;
+        background: #eef4f2;
+        border: 2px solid var(--primary);
+        border-radius: 14px;
+        box-shadow: 0 2px 10px rgba(8, 71, 60, 0.15);
+        isolation: isolate;
+      }
+
+      .pcx-app .pcx-mode-toggle::before {
+        content: "";
+        position: absolute;
+        top: 5px;
+        bottom: 5px;
+        left: 5px;
+        width: calc(50% - 5px);
+        background: var(--primary);
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(8, 71, 60, 0.25);
+        transition: left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      .pcx-app .pcx-mode-toggle[data-active="complex"]::before {
+        left: calc(50%);
+      }
+
+      .pcx-app .pcx-mode-btn {
+        position: relative;
+        z-index: 1;
+        border: none;
+        background: transparent;
+        color: var(--primary);
+        padding: 14px 20px;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: color 0.2s ease;
+        line-height: 1.2;
+        min-height: 48px;
+      }
+
+      .pcx-app .pcx-mode-btn:hover:not(.active) {
+        color: var(--primary-dark);
+      }
+
+      .pcx-app .pcx-mode-btn:focus-visible {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+        border-radius: 8px;
+      }
+
+      .pcx-app .pcx-mode-btn.active {
+        color: #fff;
+      }
+
+      .pcx-app .pcx-mode-btn.active:hover {
+        color: #fff;
+      }
+
+      .pcx-app .pcx-mode-panel.pcx-hidden {
+        display: none !important;
+      }
+
+      @media (max-width: 640px) {
+        .pcx-app .pcx-mode-bar-wrap {
+          padding: 8px 8px 0;
+        }
+
+        .pcx-app .pcx-mode-bar {
+          flex-direction: row;
+          align-items: center;
+          justify-content: flex-start;
+        }
+
+        .pcx-app .pcx-mode-toggle {
+          min-width: 100%;
+          width: 100%;
+        }
+
+        .pcx-app .pcx-mode-btn {
+          padding: 12px 14px;
+          font-size: 0.95rem;
+        }
+      }
+    </style>
+
+    <div class="pcx-mode-bar-wrap">
+      <div class="pcx-mode-bar">
+        <div class="pcx-mode-label-wrap">
+          <span class="pcx-mode-label">Calculator type</span>
+          <span class="pcx-mode-hint">Tap to switch quote style</span>
+        </div>
+        <div class="pcx-mode-toggle" role="group" aria-label="Calculator type" data-active="simple">
+          <button type="button" class="pcx-mode-btn active" data-pcx-mode="simple" aria-pressed="true">Simple</button>
+          <button type="button" class="pcx-mode-btn" data-pcx-mode="complex" aria-pressed="false">Complex</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="pcx-mode-simple" class="pcx-mode-panel" aria-hidden="false">
+      <style>
+          #pcx-mode-simple {
+            --primary: #08473C;
+            --bg: #fff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --card: #ffffff;
+            --border: #e5e7eb;
+            --shadow: 0 6px 24px rgba(0,0,0,.08);
+            --radius-xl: 20px;
+            --radius-md: 12px;
+          }
+    
+          .pricing-calculator * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif !important;
+          }
+    
+          .pricing-calculator {
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            padding: 1rem;
+          }
+    
+          .pricing-calculator .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+          }
+    
+          @media (max-width: 768px) {
+            .pricing-calculator .container {
+              padding: 0.5rem;
+            }
+          }
+    
+          .pricing-calculator .calculator {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+          }
+    
+          @media (min-width: 768px) {
+            .pricing-calculator .calculator {
+              flex-direction: row;
+            }
+      
+            .pricing-calculator .calculator-left {
+              flex: 1;
+            }
+      
+            .pricing-calculator .calculator-right {
+              flex: 1;
+            }
+          }
+    
+          .pricing-calculator h1 {
+            font-size: 2rem !important;
+            margin-bottom: 0.5rem !important;
+            color: var(--text) !important;
+          }
+    
+          @media (max-width: 768px) {
+            .pricing-calculator h1 {
+              font-size: 1.5rem !important;
+            }
+          }
+    
+          .pricing-calculator p {
+            color: var(--muted) !important;
+            margin-bottom: 1.5rem !important;
+          }
+    
+          .pricing-calculator .helper-text {
+            font-size: 0.9rem !important;
+            font-style: italic;
+            margin-bottom: 1.5rem !important;
+          }
+    
+          .pricing-calculator .card {
+            background-color: var(--card) !important;
+            border-radius: var(--radius-xl) !important;
+            padding: 1.5rem !important;
+            box-shadow: var(--shadow) !important;
+            margin-bottom: 1.5rem !important;
+            transition: transform 0.2s ease-in-out !important;
+          }
+    
+          @media (max-width: 768px) {
+            .pricing-calculator .card {
+              padding: 1rem !important;
+            }
+          }
+    
+          @media (prefers-reduced-motion) {
+            .pricing-calculator .card, 
+            .pricing-calculator .toggle-switch, 
+            .pricing-calculator .radio-card, 
+            .pricing-calculator .radio-pill {
+              transition: none !important;
+            }
+          }
+    
+          .pricing-calculator .card:hover {
+            transform: translateY(-2px) !important;
+          }
+    
+          .pricing-calculator .service-row {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            padding: 1rem 0 !important;
+            border-bottom: 1px solid var(--border) !important;
+          }
+    
+          @media (max-width: 480px) {
+            .pricing-calculator .service-row {
+              flex-direction: column !important;
+              align-items: flex-start !important;
+              gap: 0.75rem !important;
+            }
+      
+            .pricing-calculator .service-row .toggle-container {
+              align-self: flex-end !important;
+            }
+          }
+    
+          .pricing-calculator .service-row:last-child {
+            border-bottom: none !important;
+          }
+    
+          .pricing-calculator .service-info {
+            display: flex !important;
+            align-items: flex-start !important;
+            gap: 1rem !important;
+          }
+    
+          .pricing-calculator .service-icon {
+            background-color: rgba(8, 71, 60, 0.1) !important;
+            color: var(--primary) !important;
+            width: 40px !important;
+            height: 40px !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 1.2rem !important;
+          }
+    
+          .pricing-calculator .service-text h3 {
+            font-size: 1rem !important;
+            margin-bottom: 0.25rem !important;
+          }
+    
+          .pricing-calculator .service-text p {
+            font-size: 0.85rem !important;
+            margin-bottom: 0 !important;
+          }
+    
+          .pricing-calculator .toggle-container {
+            position: relative !important;
+            display: inline-block !important;
+            width: 50px !important;
+            height: 26px !important;
+          }
+    
+          .pricing-calculator .toggle-input {
+            opacity: 0 !important;
+            width: 0 !important;
+            height: 0 !important;
+          }
+    
+          .pricing-calculator .toggle-switch {
+            position: absolute !important;
+            cursor: pointer !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            background-color: #ccc !important;
+            transition: .4s !important;
+            border-radius: 34px !important;
+          }
+    
+          .pricing-calculator .toggle-switch:before {
+            position: absolute !important;
+            content: "" !important;
+            height: 18px !important;
+            width: 18px !important;
+            left: 4px !important;
+            bottom: 4px !important;
+            background-color: white !important;
+            transition: .4s !important;
+            border-radius: 50% !important;
+          }
+    
+          .pricing-calculator .toggle-input:checked + .toggle-switch {
+            background-color: var(--primary) !important;
+          }
+    
+          .pricing-calculator .toggle-input:checked + .toggle-switch:before {
+            transform: translateX(24px) !important;
+          }
+    
+          .pricing-calculator .toggle-input:disabled + .toggle-switch {
+            opacity: 0.7 !important;
+            cursor: not-allowed !important;
+          }
+    
+          .pricing-calculator .toggle-input:focus + .toggle-switch {
+            box-shadow: 0 0 1px var(--primary) !important;
+          }
+    
+          .pricing-calculator .unit-controls {
+            display: none !important;
+            margin-top: 1rem !important;
+          }
+    
+          .pricing-calculator .unit-controls.active {
+            display: block !important;
+          }
+    
+          .pricing-calculator select, 
+          .pricing-calculator input {
+            padding: 0.5rem !important;
+            border: 1px solid var(--border) !important;
+            border-radius: var(--radius-md) !important;
+            background-color: var(--bg) !important;
+            color: var(--text) !important;
+          }
+    
+          .pricing-calculator .selector-group {
+            margin-bottom: 1.5rem !important;
+          }
+    
+          .pricing-calculator .selector-group h3 {
+            margin-bottom: 1rem !important;
+            font-size: 1rem !important;
+          }
+    
+          .pricing-calculator .radio-cards {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 0.75rem !important;
+          }
+    
+          .pricing-calculator .radio-card {
+            display: block !important;
+            padding: 1rem !important;
+            border: 2px solid var(--border) !important;
+            border-radius: var(--radius-md) !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+          }
+    
+          .pricing-calculator .radio-card:hover {
+            border-color: var(--primary) !important;
+          }
+    
+          .pricing-calculator .radio-card input {
+            display: none !important;
+          }
+    
+          .pricing-calculator .radio-card input:checked + span {
+            color: var(--primary) !important;
+            font-weight: 600 !important;
+          }
+    
+          .pricing-calculator .radio-card span {
+            display: block !important;
+            width: 100% !important;
+          }
+    
+          .pricing-calculator .radio-pills {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 0.5rem !important;
+          }
+    
+          .pricing-calculator .radio-pill {
+            display: inline-block !important;
+            padding: 0.5rem 1rem !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 50px !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            font-size: 0.9rem !important;
+          }
+    
+          @media (max-width: 480px) {
+            .pricing-calculator .radio-pill {
+              flex: 1 1 calc(50% - 0.25rem) !important;
+              text-align: center !important;
+              min-width: 0 !important;
+            }
+      
+            .pricing-calculator .radio-pill span {
+              font-size: 0.85rem !important;
+            }
+          }
+    
+          .pricing-calculator .radio-pill:hover {
+            border-color: var(--primary) !important;
+          }
+    
+          .pricing-calculator .radio-pill input {
+            display: none !important;
+          }
+    
+          .pricing-calculator .radio-pill input:checked + span {
+            color: var(--primary) !important;
+            font-weight: 600 !important;
+          }
+    
+          .pricing-calculator .radio-pill span {
+            display: inline !important;
+          }
+    
+          .pricing-calculator .summary-card {
+            background-color: var(--card) !important;
+            border-radius: var(--radius-xl) !important;
+            padding: 2rem !important;
+            box-shadow: var(--shadow) !important;
+            position: sticky !important;
+            top: 1rem !important;
+          }
+    
+          @media (max-width: 768px) {
+            .pricing-calculator .summary-card {
+              position: static !important;
+              padding: 1.5rem !important;
+            }
+          }
+    
+          .pricing-calculator .selection-pill {
+            display: inline-block !important;
+            background-color: rgba(8, 71, 60, 0.1) !important;
+            color: var(--primary) !important;
+            padding: 0.5rem 1rem !important;
+            border-radius: 50px !important;
+            font-size: 0.9rem !important;
+            margin-bottom: 1.5rem !important;
+          }
+    
+          @media (max-width: 480px) {
+            .pricing-calculator .selection-pill {
+              font-size: 0.8rem !important;
+              padding: 0.4rem 0.8rem !important;
+            }
+          }
+    
+          .pricing-calculator .price-display {
+            font-size: 3rem !important;
+            font-weight: 700 !important;
+            margin-bottom: 1.5rem !important;
+            display: flex !important;
+            align-items: baseline !important;
+            gap: 0.5rem !important;
+            flex-wrap: wrap !important;
+          }
+    
+          .pricing-calculator .price-display .estimate-label {
+            font-size: 1rem !important;
+            font-weight: 400 !important;
+            color: var(--muted) !important;
+          }
+    
+          @media (max-width: 768px) {
+            .pricing-calculator .price-display {
+              font-size: 2.5rem !important;
+            }
+          }
+    
+          @media (max-width: 480px) {
+            .pricing-calculator .price-display {
+              font-size: 2rem !important;
+            }
+          }
+    
+          .pricing-calculator .feature-list {
+            list-style: none !important;
+            margin-bottom: 2rem !important;
+          }
+    
+          .pricing-calculator .feature-list li {
+            position: relative !important;
+            padding-left: 1.5rem !important;
+            margin-bottom: 0.75rem !important;
+          }
+    
+          .pricing-calculator .feature-list li:before {
+            content: "✓" !important;
+            position: absolute !important;
+            left: 0 !important;
+            color: var(--primary) !important;
+            font-weight: bold !important;
+          }
+    
+          .pricing-calculator .cta-button {
+            display: block !important;
+            width: 100% !important;
+            padding: 1rem !important;
+            background-color: var(--primary) !important;
+            color: white !important;
+            border: none !important;
+            border-radius: var(--radius-md) !important;
+            font-size: 1rem !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            text-align: center !important;
+            text-decoration: none !important;
+            margin-bottom: 1.5rem !important;
+            transition: background-color 0.2s ease !important;
+          }
+    
+          .pricing-calculator .cta-button:hover {
+            background-color: #06352b !important;
+          }
+    
+          .pricing-calculator .price-breakdown {
+            font-size: 0.85rem !important;
+            color: var(--muted) !important;
+          }
+    
+          .pricing-calculator .price-breakdown div {
+            display: flex !important;
+            justify-content: space-between !important;
+            margin-bottom: 0.5rem !important;
+          }
+
+          .pricing-calculator .price-breakdown div[style*="display: none"] {
+            display: none !important;
+          }
+    
+          .pricing-calculator .price-notice {
+            color: var(--primary) !important;
+            font-style: italic !important;
+            font-size: 0.9rem !important;
+            margin-top: 1rem !important;
+            display: none !important;
+          }
+    
+          .pricing-calculator .price-notice.active {
+            display: block !important;
+          }
+
+          .pricing-calculator .sub-service {
+            margin-bottom: 1rem !important;
+            padding: 1rem !important;
+            background-color: rgba(0, 0, 0, 0.03) !important;
+            border-radius: 8px !important;
+            display: block !important;
+            width: 100% !important;
+          }
+
+          .pricing-calculator .sub-service .service-info {
+            display: flex !important;
+            align-items: center !important;
+            margin-bottom: 0.75rem !important;
+          }
+
+          .pricing-calculator .sub-service .service-icon {
+            font-size: 1.2rem !important;
+            margin-right: 0.75rem !important;
+            line-height: 1 !important;
+            flex-shrink: 0 !important;
+          }
+
+          .pricing-calculator .sub-service .service-text {
+            flex-grow: 1 !important;
+          }
+
+          .pricing-calculator .sub-service .service-text h4 {
+            margin: 0 !important;
+            font-size: 1rem !important;
+            color: #333 !important;
+            line-height: 1.2 !important;
+          }
+
+          .pricing-calculator .sub-service .service-text p {
+            margin: 0.25rem 0 0 !important;
+            font-size: 0.9rem !important;
+            color: #666 !important;
+          }
+
+          .pricing-calculator .sub-service .quantity-selector {
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+            justify-content: flex-start !important;
+          }
+
+          .pricing-calculator .sub-service .quantity-selector input {
+            width: 60px !important;
+            text-align: center !important;
+            padding: 0.25rem !important;
+            border: 1px solid #ddd !important;
+            border-radius: 4px !important;
+          }
+
+          .pricing-calculator .sub-service .quantity-selector button {
+            width: 28px !important;
+            height: 28px !important;
+            border: 1px solid #ddd !important;
+            background: #fff !important;
+            border-radius: 4px !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 1rem !important;
+          }
+
+          .pricing-calculator .sub-service .quantity-selector button:hover {
+            background: #f0f0f0 !important;
+          }
+
+          /* Checkbox Grid Styles */
+          .pricing-calculator .checkbox-grid {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+            gap: 0.75rem !important;
+            margin-top: 1rem !important;
+          }
+    
+          @media (max-width: 600px) {
+            .pricing-calculator .checkbox-grid {
+              grid-template-columns: 1fr !important;
+            }
+          }
+
+          .pricing-calculator .checkbox-item {
+            display: flex !important;
+            align-items: center !important;
+            cursor: pointer !important;
+            padding: 0.75rem !important;
+            border: 1px solid var(--border) !important;
+            border-radius: var(--radius-md) !important;
+            transition: all 0.2s ease !important;
+            background-color: var(--bg) !important;
+          }
+    
+          @media (max-width: 480px) {
+            .pricing-calculator .checkbox-item {
+              padding: 0.6rem !important;
+            }
+      
+            .pricing-calculator .checkbox-label {
+              font-size: 0.85rem !important;
+            }
+          }
+
+          .pricing-calculator .checkbox-item:hover {
+            border-color: var(--primary) !important;
+            background-color: rgba(8, 71, 60, 0.02) !important;
+          }
+
+          .pricing-calculator .checkbox-item input[type="checkbox"] {
+            display: none !important;
+          }
+
+          .pricing-calculator .checkmark {
+            width: 20px !important;
+            height: 20px !important;
+            border: 2px solid var(--border) !important;
+            border-radius: 4px !important;
+            margin-right: 0.75rem !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: all 0.2s ease !important;
+            flex-shrink: 0 !important;
+          }
+
+          .pricing-calculator .checkbox-item input[type="checkbox"]:checked + .checkmark {
+            background-color: var(--primary) !important;
+            border-color: var(--primary) !important;
+            color: white !important;
+          }
+
+          .pricing-calculator .checkbox-item input[type="checkbox"]:checked + .checkmark::after {
+            content: "✓" !important;
+            font-size: 14px !important;
+            font-weight: bold !important;
+          }
+
+          .pricing-calculator .checkbox-item input[type="checkbox"]:checked ~ .checkbox-label {
+            color: var(--primary) !important;
+            font-weight: 600 !important;
+          }
+
+          .pricing-calculator .checkbox-label {
+            font-size: 0.95rem !important;
+            transition: all 0.2s ease !important;
+          }
+
+          /* Contact Form Styles */
+          .pricing-calculator .contact-fields {
+            margin-bottom: 1.5rem !important;
+            padding: 1.5rem !important;
+            background-color: rgba(8, 71, 60, 0.05) !important;
+            border-radius: var(--radius-md) !important;
+            border: 1px solid var(--border) !important;
+          }
+
+          .pricing-calculator .contact-fields h4 {
+            font-size: 1rem !important;
+            margin-bottom: 1rem !important;
+            color: var(--text) !important;
+          }
+
+          .pricing-calculator .form-group {
+            margin-bottom: 1rem !important;
+          }
+
+          .pricing-calculator .form-group label {
+            display: block !important;
+            font-size: 0.9rem !important;
+            font-weight: 500 !important;
+            margin-bottom: 0.5rem !important;
+            color: var(--text) !important;
+          }
+
+          .pricing-calculator .form-group input {
+            width: 100% !important;
+            padding: 0.75rem !important;
+            border: 1px solid var(--border) !important;
+            border-radius: var(--radius-md) !important;
+            background-color: var(--bg) !important;
+            color: var(--text) !important;
+            font-size: 1rem !important;
+            transition: border-color 0.2s ease !important;
+          }
+
+          .pricing-calculator .form-group input:focus {
+            outline: none !important;
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 3px rgba(8, 71, 60, 0.1) !important;
+          }
+
+          .pricing-calculator .form-group input::placeholder {
+            color: var(--muted) !important;
+          }
+
+          .pricing-calculator .form-group.error input {
+            border-color: #dc2626 !important;
+          }
+
+          .pricing-calculator .error-message {
+            display: none !important;
+            color: #dc2626 !important;
+            font-size: 0.85rem !important;
+            margin-top: 0.25rem !important;
+          }
+
+          .pricing-calculator .form-group.error .error-message {
+            display: block !important;
+          }
+
+          /* Service Selection Error */
+          .pricing-calculator .service-selection-error {
+            display: none !important;
+            background-color: #fee2e2 !important;
+            border: 1px solid #dc2626 !important;
+            border-radius: var(--radius-md) !important;
+            padding: 1rem !important;
+            margin-bottom: 1.5rem !important;
+            color: #dc2626 !important;
+            font-size: 0.9rem !important;
+            font-weight: 500 !important;
+          }
+
+          .pricing-calculator .service-selection-error.show {
+            display: block !important;
+          }
+
+          .pricing-calculator .service-selection-error::before {
+            content: "⚠️ " !important;
+            margin-right: 0.5rem !important;
+          }
+
+          /* Toast Notification Styles */
+          .pricing-calculator .toast {
+            position: fixed !important;
+            top: 20px !important;
+            right: 20px !important;
+            background-color: #10b981 !important;
+            color: white !important;
+            padding: 1rem 1.5rem !important;
+            border-radius: var(--radius-md) !important;
+            box-shadow: 0 10px 40px rgba(0,0,0,.2) !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 1rem !important;
+            min-width: 300px !important;
+            max-width: 500px !important;
+            z-index: 10000 !important;
+            opacity: 0 !important;
+            transform: translateX(400px) !important;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) !important;
+          }
+
+          .pricing-calculator .toast.show {
+            opacity: 1 !important;
+            transform: translateX(0) !important;
+          }
+
+          .pricing-calculator .toast.hide {
+            opacity: 0 !important;
+            transform: translateX(400px) !important;
+          }
+
+          .pricing-calculator .toast-icon {
+            width: 24px !important;
+            height: 24px !important;
+            background-color: rgba(255, 255, 255, 0.2) !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 16px !important;
+            flex-shrink: 0 !important;
+          }
+
+          .pricing-calculator .toast-content {
+            flex: 1 !important;
+          }
+
+          .pricing-calculator .toast-title {
+            font-weight: 600 !important;
+            font-size: 1rem !important;
+            margin-bottom: 0.25rem !important;
+          }
+
+          .pricing-calculator .toast-message {
+            font-size: 0.875rem !important;
+            opacity: 0.9 !important;
+            line-height: 1.4 !important;
+          }
+
+          .pricing-calculator .toast-close {
+            background: none !important;
+            border: none !important;
+            color: white !important;
+            font-size: 1.5rem !important;
+            cursor: pointer !important;
+            padding: 0 !important;
+            width: 24px !important;
+            height: 24px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            opacity: 0.7 !important;
+            transition: opacity 0.2s ease !important;
+            flex-shrink: 0 !important;
+          }
+
+          .pricing-calculator .toast-close:hover {
+            opacity: 1 !important;
+          }
+
+          @media (max-width: 600px) {
+            .pricing-calculator .toast {
+              top: 10px !important;
+              right: 10px !important;
+              left: 10px !important;
+              min-width: auto !important;
+              max-width: none !important;
+              transform: translateY(-100px) !important;
+            }
+
+            .pricing-calculator .toast.show {
+              transform: translateY(0) !important;
+            }
+
+            .pricing-calculator .toast.hide {
+              transform: translateY(-100px) !important;
+            }
+          }
+      </style>
+
+      <div class="pricing-calculator">
+        <div class="container">
+          <form id="pricingForm" method="POST" action="#" onsubmit="return pcxSimpleHandleFormSubmit(event);">
+          <div class="calculator">
+            <div class="calculator-left">
+              <h1>Ensure Your Projects Run Smoothly</h1>
+              <p>Measured surveys and detailed existing drawings with our straightforward pricing model</p>
+              <!-- <p class="helper-text">If you don't like the drawings we produce, you'll get a full refund.</p> -->
+        
+              <div class="card">
+                <div class="service-row">
+                  <div class="service-info">
+                    <div class="service-icon">📏</div>
+                    <div class="service-text">
+                      <h3>Measured Survey</h3>
+                      <p>Full measured building survey</p>
+                    </div>
+                  </div>
+                  <label class="toggle-container">
+                    <input type="checkbox" class="toggle-input" id="toggle-measuredSurvey" name="measuredSurvey" value="1" checked>
+                    <span class="toggle-switch"></span>
+                  </label>
+                </div>
+          
+                <div class="service-row">
+                  <div class="service-info">
+                    <div class="service-icon">🧭</div>
+                    <div class="service-text">
+                      <h3>Topographical Survey</h3>
+                      <p>Detailed site topographical survey</p>
+                    </div>
+                  </div>
+                  <label class="toggle-container">
+                    <input type="checkbox" class="toggle-input" id="toggle-planningReady" name="planningReady" value="1">
+                    <span class="toggle-switch"></span>
+                  </label>
+                </div>
+          
+                <div class="service-row">
+                  <div class="service-info">
+                    <div class="service-icon">🗂️</div>
+                    <div class="service-text">
+                        <h3>Existing Drawings Preparation</h3>
+                        <p>Per-Floor Fee</p>
+                      </div>
+                  </div>
+                  <label class="toggle-container">
+                    <input type="checkbox" class="toggle-input" id="toggle-existingPrep" name="existingPrep" value="1">
+                    <span class="toggle-switch"></span>
+                  </label>
+                </div>
+          
+                <div class="unit-controls" id="existingPrepControls">
+                  <!-- Main Floor Controls -->
+                  <div class="sub-service">
+                    <div class="service-info">
+                      <div class="service-icon">🏢</div>
+                      <div class="service-text">
+                        <h4>Floor Plans</h4>
+                        <p>Per-Floor Fee: <span id="unitPriceDisplay">£35</span></p>
+                      </div>
+                    </div>
+                    <div class="quantity-selector">
+                      <span>Floors:</span>
+                      <button type="button" id="decreaseFloor" aria-label="Decrease floor count">-</button>
+                      <input type="number" id="floorCount" name="floorCount" min="1" value="1" aria-label="Floor count">
+                      <button type="button" id="increaseFloor" aria-label="Increase floor count">+</button>
+                    </div>
+                  </div>
+            
+                  <!-- Elevations Controls -->
+                  <div class="sub-service">
+                    <div class="service-info">
+                      <div class="service-icon">🏛️</div>
+                      <div class="service-text">
+                        <h4>Elevations</h4>
+                        <p>Per-Elevation Fee: <span id="elevationsUnitPriceDisplay">£35</span></p>
+                      </div>
+                    </div>
+                    <div class="quantity-selector">
+                      <span>Quantity:</span>
+                      <button type="button" id="decreaseElevations" aria-label="Decrease elevations count">-</button>
+                      <input type="number" id="elevationsCount" name="elevationsCount" min="0" value="0" aria-label="Elevations count">
+                      <button type="button" id="increaseElevations" aria-label="Increase elevations count">+</button>
+                    </div>
+                  </div>
+            
+                  <!-- Sections Controls -->
+                  <div class="sub-service">
+                    <div class="service-info">
+                      <div class="service-icon">✂️</div>
+                      <div class="service-text">
+                        <h4>Sections</h4>
+                        <p>Per-Section Fee: <span id="sectionsUnitPriceDisplay">£35</span></p>
+                      </div>
+                    </div>
+                    <div class="quantity-selector">
+                      <span>Quantity:</span>
+                      <button type="button" id="decreaseSections" aria-label="Decrease sections count">-</button>
+                      <input type="number" id="sectionsCount" name="sectionsCount" min="0" value="0" aria-label="Sections count">
+                      <button type="button" id="increaseSections" aria-label="Increase sections count">+</button>
+                    </div>
+                  </div>
+                </div>
+          
+                <div class="service-row">
+                  <div class="service-info">
+                    <div class="service-icon">🏗️</div>
+                    <div class="service-text">
+                      <h3>Proposed Drawings Preparation</h3>
+                      <p>Select extension and conversion types</p>
+                    </div>
+                  </div>
+                  <label class="toggle-container">
+                    <input type="checkbox" class="toggle-input" id="toggle-proposedPrep" name="proposedPrep" value="1">
+                    <span class="toggle-switch"></span>
+                  </label>
+                </div>
+          
+                <div class="unit-controls" id="proposedPrepControls">
+                  <div class="sub-service">
+                    <div class="checkbox-grid">
+                      <label class="checkbox-item">
+                        <input type="checkbox" id="rearExtension" name="proposedTypes[]" value="rearExtension">
+                        <span class="checkmark"></span>
+                        <span class="checkbox-label">Rear Extension (£100)</span>
+                      </label>
+                
+                      <label class="checkbox-item">
+                        <input type="checkbox" id="sideExtension" name="proposedTypes[]" value="sideExtension">
+                        <span class="checkmark"></span>
+                        <span class="checkbox-label">Side Extension (£100)</span>
+                      </label>
+                
+                      <label class="checkbox-item">
+                        <input type="checkbox" id="frontExtension" name="proposedTypes[]" value="frontExtension">
+                        <span class="checkmark"></span>
+                        <span class="checkbox-label">Front Extension (£100)</span>
+                      </label>
+                
+                      <label class="checkbox-item">
+                        <input type="checkbox" id="gardenExtension" name="proposedTypes[]" value="gardenExtension">
+                        <span class="checkmark"></span>
+                        <span class="checkbox-label">Garden Extension (£100)</span>
+                      </label>
+                
+                      <label class="checkbox-item">
+                        <input type="checkbox" id="garageConversion" name="proposedTypes[]" value="garageConversion">
+                        <span class="checkmark"></span>
+                        <span class="checkbox-label">Garage Conversion (£100)</span>
+                      </label>
+                
+                      <label class="checkbox-item">
+                        <input type="checkbox" id="loftConversion" name="proposedTypes[]" value="loftConversion">
+                        <span class="checkmark"></span>
+                        <span class="checkbox-label">Loft Conversion (£100)</span>
+                      </label>
+                
+                      <label class="checkbox-item">
+                        <input type="checkbox" id="dormerExtension" name="proposedTypes[]" value="dormerExtension">
+                        <span class="checkmark"></span>
+                        <span class="checkbox-label">Dormer Extension (£100)</span>
+                      </label>
+                
+                      <label class="checkbox-item">
+                        <input type="checkbox" id="singleStoreyDormers" name="proposedTypes[]" value="singleStoreyDormers">
+                        <span class="checkmark"></span>
+                        <span class="checkbox-label">Single Storey Dormer (£100)</span>
+                      </label>
+                
+                      <label class="checkbox-item">
+                        <input type="checkbox" id="doubleStoreyDormers" name="proposedTypes[]" value="doubleStoreyDormers">
+                        <span class="checkmark"></span>
+                        <span class="checkbox-label">Double Storey Dormers (£160)</span>
+                      </label>
+                
+                      <label class="checkbox-item">
+                        <input type="checkbox" id="others" name="proposedTypes[]" value="others">
+                        <span class="checkmark"></span>
+                        <span class="checkbox-label">Others (£80)</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+        
+              <div class="selector-group" id="locationGroup">
+                <h3>Location</h3>
+                <div class="radio-cards">
+                  <label class="radio-card" for="homeCounties">
+                    <input type="radio" name="location" id="homeCounties" value="homeCounties" checked>
+                    <span>Home Counties</span>
+                  </label>
+                  <label class="radio-card" for="londonNorthEast">
+                    <input type="radio" name="location" id="londonNorthEast" value="londonNorthEast">
+                    <span>London: North, NW & East (E, EC)</span>
+                  </label>
+                  <label class="radio-card" for="londonSouthWest">
+                    <input type="radio" name="location" id="londonSouthWest" value="londonSouthWest">
+                    <span>London: South, SE, SW & West (W, WC)</span>
+                  </label>
+                </div>
+              </div>
+        
+              <div class="selector-group" id="sizeGroup">
+                <h3>Property size (sqm)</h3>
+                <div class="form-group" id="propertySqmGroup">
+                  <label for="propertySqm">Enter property size (sqm) <span style="color: #dc2626;">*</span></label>
+                  <input type="number" id="propertySqm" name="propertySqm" min="10" step="0.01" value="100" placeholder="e.g. 87.5">
+                  <span class="error-message">Please enter a valid size (minimum 10 sqm). Sizes round to whole sqm before pricing (e.g. 99.5 → 100).</span>
+                </div>
+              </div>
+            </div>
+      
+            <div class="calculator-right">
+              <div class="summary-card">
+                <div id="selectionPill" class="selection-pill">Home Counties • 100 sqm</div>
+                <div class="price-display">
+                  <span>£<span id="priceTotal">250</span></span>
+                  <span class="estimate-label">Estimate</span>
+                </div>
+          
+                <ul class="feature-list">
+                  <li>Topographical Survey</li>
+                  <li>Home Counties Survey Rates</li>
+                  <li>London Survey Rates Per Floor</li>
+                  <li>Measured and topographical surveys use the same sqm and location pricing as the complex calculator</li>
+                  <li>Avg. 2 week turnaround</li>
+                  <li>Phone & email support</li>
+                </ul>
+          
+                <!-- Contact Information Fields -->
+                <div class="contact-fields">
+                  <h4>Your Contact Information</h4>
+            
+                  <!-- Service Selection Error Message -->
+                  <div id="serviceSelectionError" class="service-selection-error">
+                    Please select at least one service before submitting.
+                  </div>
+            
+                  <div class="form-group" id="nameGroup">
+                    <label for="userName">Full Name <span style="color: #dc2626;">*</span></label>
+                    <input type="text" id="userName" name="userName" placeholder="Enter your full name" required>
+                    <span class="error-message">Please enter your name</span>
+                  </div>
+                  <div class="form-group" id="emailGroup">
+                    <label for="userEmail">Email Address <span style="color: #dc2626;">*</span></label>
+                    <input type="email" id="userEmail" name="userEmail" placeholder="your.email@example.com" required>
+                    <span class="error-message">Please enter a valid email address</span>
+                  </div>
+                  <div class="form-group" id="phoneGroup">
+                    <label for="userPhone">Phone Number</label>
+                    <input type="text" id="userPhone" name="userPhone" placeholder="Optional phone number">
+                  </div>
+                  <div class="form-group" id="addressGroup">
+                    <label for="userAddress">Address <span style="color: #dc2626;">*</span></label>
+                    <input type="text" id="userAddress" name="userAddress" placeholder="Enter property or site address">
+                    <span class="error-message">Please enter the address</span>
+                  </div>
+                </div>
+          
+                <button type="submit" class="cta-button" aria-label="Submit quote request">Submit Quote Request</button>
+          
+                <!-- Hidden fields to capture calculated values -->
+                <input type="hidden" id="hiddenTotalPrice" name="totalPrice" value="250">
+                <input type="hidden" id="hiddenBasePrice" name="basePrice" value="250">
+                <input type="hidden" id="hiddenPlanningPrice" name="planningPrice" value="0">
+                <input type="hidden" id="hiddenExistingPrice" name="existingPrice" value="0">
+                <input type="hidden" id="hiddenProposedPrice" name="proposedPrice" value="0">
+                <input type="hidden" id="hiddenSelectedLocation" name="selectedLocation" value="homeCounties">
+                <input type="hidden" id="hiddenSelectedSize" name="selectedSize" value="100">
+                <input type="hidden" id="hiddenSizeM2" name="sizeM2" value="100">
+          
+                <div class="price-breakdown">
+                   <div>
+                     <span>Measured survey:</span>
+                     <span>£<span id="priceBase">250</span></span>
+                   </div>
+                   <div id="planningBreakdown" style="display: none;">
+                     <span>Topographical Survey:</span>
+                     <span>£<span id="pricePlanning">0</span></span>
+                   </div>
+                   <div id="existingBreakdown" style="display: none;">
+                     <span>Existing Drawings Prep (Per-Floor):</span>
+                     <span>£<span id="priceExisting">0</span></span>
+                   </div>
+                   <div id="proposedBreakdown" style="display: none;">
+                     <span>Proposed Drawings Prep:</span>
+                     <span>£<span id="priceProposed">0</span></span>
+                   </div>
+                 </div>
+              </div>
+            </div>
+            </form>
+          </div>
+        </div>
+  
+        <!-- Toast Notification -->
+        <div id="successToast" class="toast">
+          <div class="toast-icon">✓</div>
+          <div class="toast-content">
+            <div class="toast-title">Success!</div>
+            <div class="toast-message">Your quote request has been submitted successfully. We'll contact you soon!</div>
+          </div>
+          <button class="toast-close" onclick="pcxSimpleCloseToast()" aria-label="Close notification">×</button>
+        </div>
+      </div>
+
+      <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          // Data
+          const data = {
+            "hero": {
+              "title": "Ensure Your Projects Run Smoothly",
+              "subtitle": "Measured surveys and detailed existing drawings with our straightforward pricing model",
+              "bullets": [
+                "Topographical Survey",
+                "Home Counties Survey Rates",
+                "London Survey Rates Per Floor",
+                "Transparent pricing based on property size and location"
+              ]
+            },
+            "services": [
+              {
+                "id": "measuredSurvey",
+                "label": "Measured Survey",
+                "desc": "Full measured building survey",
+                "type": "baseRateFromTable",
+                "required": true
+              },
+              {
+                "id": "planningReady",
+                "label": "Topographical Survey",
+                "desc": "Detailed site topographical survey",
+                "type": "baseRateFromTable"
+              },
+              {
+                "id": "existingPrep",
+                "label": "Existing Drawings Preparation",
+                "desc": "Per-floor fee",
+                "type": "perUnit",
+                "unitLabel": "floors",
+                "unitPriceBySize": { 
+                  "50-100": 30, 
+                  "100-150": 35, 
+                  "150-200": 40, 
+                  "200-300": 50, 
+                  "300-400": 60, 
+                  "400-500": 70 
+                },
+                "defaultUnitPrice": 35
+              },
+              {
+                "id": "elevations",
+                "label": "Elevations",
+                "desc": "Per-elevation fee",
+                "type": "perUnit",
+                "unitLabel": "elevations",
+                "unitPriceBySize": { 
+                  "50-100": 30, 
+                  "100-150": 35, 
+                  "150-200": 40, 
+                  "200-300": 50, 
+                  "300-400": 60, 
+                  "400-500": 70 
+                },
+                "defaultUnitPrice": 35
+              },
+              {
+                "id": "sections",
+                "label": "Sections",
+                "desc": "Per-section fee",
+                "type": "perUnit",
+                "unitLabel": "sections",
+                "unitPriceBySize": { 
+                  "50-100": 30, 
+                  "100-150": 35, 
+                  "150-200": 40, 
+                  "200-300": 50, 
+                  "300-400": 60, 
+                  "400-500": 70 
+                },
+                "defaultUnitPrice": 35
+              }
+            ],
+            "locationRateMultipliers": {
+              "londonNorthEast": 1.0,
+              "londonSouthWest": 1.25,
+              "homeCounties": 1.5
+            },
+            "measuredSurveyUnitFactors": {
+              "upTo150": 1.5,
+              "from151To200": 1.25,
+              "over200": 1.1
+            },
+            "topographicalSurveyBaseFees": {
+              "upTo500": 550,
+              "from501To700": 650,
+              "from701To900": 700,
+              "over900": 900
+            },
+            "locations": [
+              { "id": "londonNorthEast", "label": "London: North, NW & East (E, EC)" },
+              { "id": "londonSouthWest", "label": "London: South, SE, SW & West (W, WC)" },
+              { "id": "homeCounties", "label": "Home Counties" }
+            ],
+            "sizeBands": ["50-100","100-150","150-200","200-300","300-400","400-500"],
+            "cta": {
+              "label": "Book a 45-min call",
+              "href": "./45-min"
+            }
+          };
+
+          if (window.pcdPricingBridge) {
+              window.pcdPricingBridge.mergeSimpleData(data);
+          }
+    
+          // DOM Elements
+          const toggleMeasuredSurvey = document.getElementById('toggle-measuredSurvey');
+          const togglePlanningReady = document.getElementById('toggle-planningReady');
+          const toggleExistingPrep = document.getElementById('toggle-existingPrep');
+          const toggleProposedPrep = document.getElementById('toggle-proposedPrep');
+          const existingPrepControls = document.getElementById('existingPrepControls');
+          const proposedPrepControls = document.getElementById('proposedPrepControls');
+          const unitPriceDisplay = document.getElementById('unitPriceDisplay');
+          const elevationsUnitPriceDisplay = document.getElementById('elevationsUnitPriceDisplay');
+          const sectionsUnitPriceDisplay = document.getElementById('sectionsUnitPriceDisplay');
+          const locationRadios = document.querySelectorAll('input[name="location"]');
+          const propertySqmInput = document.getElementById('propertySqm');
+          const propertySqmGroup = document.getElementById('propertySqmGroup');
+          const selectionPill = document.getElementById('selectionPill');
+          const priceBase = document.getElementById('priceBase');
+          const pricePlanning = document.getElementById('pricePlanning');
+          const priceExisting = document.getElementById('priceExisting');
+          const priceElevations = document.getElementById('priceElevations');
+          const priceSections = document.getElementById('priceSections');
+          const priceProposed = document.getElementById('priceProposed');
+          const priceTotal = document.getElementById('priceTotal');
+          const planningBreakdown = document.getElementById('planningBreakdown');
+          const existingBreakdown = document.getElementById('existingBreakdown');
+          const proposedBreakdown = document.getElementById('proposedBreakdown');
+          const floorCountInput = document.getElementById('floorCount');
+          const decreaseFloorBtn = document.getElementById('decreaseFloor');
+          const increaseFloorBtn = document.getElementById('increaseFloor');
+          const elevationsCountInput = document.getElementById('elevationsCount');
+          const decreaseElevationsBtn = document.getElementById('decreaseElevations');
+          const increaseElevationsBtn = document.getElementById('increaseElevations');
+          const sectionsCountInput = document.getElementById('sectionsCount');
+          const decreaseSectionsBtn = document.getElementById('decreaseSections');
+          const increaseSectionsBtn = document.getElementById('increaseSections');
+    
+          // Proposed drawings checkboxes
+          const proposedCheckboxes = [
+              document.getElementById('rearExtension'),
+              document.getElementById('sideExtension'),
+              document.getElementById('frontExtension'),
+              document.getElementById('gardenExtension'),
+              document.getElementById('garageConversion'),
+              document.getElementById('loftConversion'),
+              document.getElementById('dormerExtension'),
+              document.getElementById('singleStoreyDormers'),
+              document.getElementById('doubleStoreyDormers'),
+              document.getElementById('others')
+          ];
+    
+          // Event Listeners
+          if (toggleMeasuredSurvey) {
+              toggleMeasuredSurvey.addEventListener('change', function() {
+                  updatePrice();
+              });
+          }
+    
+          if (togglePlanningReady) {
+              togglePlanningReady.addEventListener('change', function() {
+                  if (planningBreakdown) {
+                      planningBreakdown.style.display = this.checked ? 'flex' : 'none';
+                  }
+                  updatePrice();
+              });
+          }
+    
+          if (toggleExistingPrep) {
+              toggleExistingPrep.addEventListener('change', function() {
+                  if (existingPrepControls) {
+                      existingPrepControls.classList.toggle('active', this.checked);
+                  }
+                  if (existingBreakdown) {
+                      existingBreakdown.style.display = this.checked ? 'flex' : 'none';
+                  }
+                  updatePrice();
+              });
+          }
+    
+          if (toggleProposedPrep) {
+              toggleProposedPrep.addEventListener('change', function() {
+                  if (proposedPrepControls) {
+                      proposedPrepControls.classList.toggle('active', this.checked);
+                  }
+                  if (proposedBreakdown) {
+                      proposedBreakdown.style.display = this.checked ? 'flex' : 'none';
+                  }
+                  updatePrice();
+              });
+          }
+    
+          // Add event listeners for proposed drawings checkboxes
+          proposedCheckboxes.forEach(checkbox => {
+              if (checkbox) {
+                  checkbox.addEventListener('change', updatePrice);
+              }
+          });
+    
+          // Floor count controls
+          if (decreaseFloorBtn) {
+              decreaseFloorBtn.addEventListener('click', function() {
+                  const currentValue = parseInt(floorCountInput.value);
+                  if (currentValue > 1) {
+                      floorCountInput.value = currentValue - 1;
+                      updatePrice();
+                  }
+              });
+          }
+    
+          if (increaseFloorBtn) {
+              increaseFloorBtn.addEventListener('click', function() {
+                  const currentValue = parseInt(floorCountInput.value);
+                  floorCountInput.value = currentValue + 1;
+                  updatePrice();
+              });
+          }
+    
+          // Elevations count controls
+          if (decreaseElevationsBtn) {
+              decreaseElevationsBtn.addEventListener('click', function() {
+                  const currentValue = parseInt(elevationsCountInput.value);
+                  if (currentValue > 0) {
+                      elevationsCountInput.value = currentValue - 1;
+                      updatePrice();
+                  }
+              });
+          }
+    
+          if (increaseElevationsBtn) {
+              increaseElevationsBtn.addEventListener('click', function() {
+                  const currentValue = parseInt(elevationsCountInput.value);
+                  elevationsCountInput.value = currentValue + 1;
+                  updatePrice();
+              });
+          }
+    
+          // Sections count controls
+          if (decreaseSectionsBtn) {
+              decreaseSectionsBtn.addEventListener('click', function() {
+                  const currentValue = parseInt(sectionsCountInput.value);
+                  if (currentValue > 0) {
+                      sectionsCountInput.value = currentValue - 1;
+                      updatePrice();
+                  }
+              });
+          }
+    
+          if (increaseSectionsBtn) {
+              increaseSectionsBtn.addEventListener('click', function() {
+                  const currentValue = parseInt(sectionsCountInput.value);
+                  sectionsCountInput.value = currentValue + 1;
+                  updatePrice();
+              });
+          }
+    
+          if (floorCountInput) {
+              floorCountInput.addEventListener('input', function() {
+                  let value = parseInt(this.value);
+                  if (isNaN(value) || value < 1) {
+                      value = 1;
+                      this.value = 1;
+                  }
+                  updatePrice();
+              });
+          }
+    
+          [elevationsCountInput, sectionsCountInput].forEach(input => {
+              if (input) {
+                  input.addEventListener('input', function() {
+                      let value = parseInt(this.value);
+                      if (isNaN(value) || value < 0) {
+                          value = 0;
+                          this.value = 0;
+                      }
+                      updatePrice();
+                  });
+              }
+          });
+    
+          locationRadios.forEach(radio => {
+              if (radio) {
+                  radio.addEventListener('change', updatePrice);
+              }
+          });
+    
+          if (propertySqmInput) {
+              propertySqmInput.addEventListener('input', function() {
+                  if (propertySqmGroup) propertySqmGroup.classList.remove('error');
+                  updateUnitPrice();
+                  updatePrice();
+              });
+          }
+
+          function getPropertySqmInputNumber() {
+              if (!propertySqmInput) return null;
+              const raw = propertySqmInput.value.trim();
+              if (raw === '') return null;
+              const n = Number(raw);
+              return Number.isFinite(n) ? n : null;
+          }
+
+          function getRoundedPropertySqm() {
+              const n = getPropertySqmInputNumber();
+              if (n === null) return null;
+              return Math.round(n);
+          }
+
+          function getLocationRateMultiplier(location) {
+              return data.locationRateMultipliers[location] || 1;
+          }
+
+          function getMeasuredUnitFactor(roundedSqm) {
+              if (roundedSqm === null || roundedSqm < 10) return null;
+              if (roundedSqm <= 150) return data.measuredSurveyUnitFactors.upTo150;
+              if (roundedSqm <= 200) return data.measuredSurveyUnitFactors.from151To200;
+              return data.measuredSurveyUnitFactors.over200;
+          }
+
+          function getTopographicalBaseFee(roundedSqm) {
+              if (roundedSqm === null || roundedSqm < 10) return null;
+              if (roundedSqm <= 500) return data.topographicalSurveyBaseFees.upTo500;
+              if (roundedSqm <= 700) return data.topographicalSurveyBaseFees.from501To700;
+              if (roundedSqm <= 900) return data.topographicalSurveyBaseFees.from701To900;
+              return data.topographicalSurveyBaseFees.over900;
+          }
+
+          function roundToNearestTen(value) {
+              return Math.round(value / 10) * 10;
+          }
+
+          function getSizeBandFromSqm(roundedSqm) {
+              if (roundedSqm === null || roundedSqm < 10) return '50-100';
+              if (roundedSqm < 100) return '50-100';
+              if (roundedSqm < 150) return '100-150';
+              if (roundedSqm < 200) return '150-200';
+              if (roundedSqm < 300) return '200-300';
+              if (roundedSqm < 400) return '300-400';
+              return '400-500';
+          }
+
+          function getMeasuredSurveyPrice(location, roundedSqm) {
+              if (!toggleMeasuredSurvey || !toggleMeasuredSurvey.checked) return 0;
+              const unitFactor = getMeasuredUnitFactor(roundedSqm);
+              if (unitFactor === null) return 0;
+              const locationRate = getLocationRateMultiplier(location);
+              const base = roundedSqm * unitFactor * locationRate;
+              return Math.max(250, roundToNearestTen(base));
+          }
+
+          function getTopographicalSurveyPrice(location, roundedSqm) {
+              if (!togglePlanningReady || !togglePlanningReady.checked) return 0;
+              const baseFee = getTopographicalBaseFee(roundedSqm);
+              if (baseFee === null) return 0;
+              const locationRate = getLocationRateMultiplier(location);
+              return baseFee * locationRate;
+          }
+    
+          // Initialize
+          if (planningBreakdown) planningBreakdown.style.display = 'none';
+          if (existingBreakdown) existingBreakdown.style.display = 'none';
+          if (proposedBreakdown) proposedBreakdown.style.display = 'none';
+          updateUnitPrice(); // Initialize unit price display
+    
+          // Initialize breakdown visibility based on toggle states
+          if (togglePlanningReady && planningBreakdown) {
+              planningBreakdown.style.display = togglePlanningReady.checked ? 'flex' : 'none';
+          }
+          if (toggleExistingPrep && existingBreakdown) {
+              existingBreakdown.style.display = toggleExistingPrep.checked ? 'flex' : 'none';
+          }
+          if (toggleProposedPrep && proposedBreakdown) {
+              proposedBreakdown.style.display = toggleProposedPrep.checked ? 'flex' : 'none';
+          }
+    
+          // Update unit price based on rounded property sqm (for existing drawings per-unit fees)
+          function updateUnitPrice() {
+              const roundedSqm = getRoundedPropertySqm();
+              const selectedSize = getSizeBandFromSqm(roundedSqm);
+              const unitPrice = data.services[2].unitPriceBySize[selectedSize];
+              const elevationsUnitPrice = data.services[3].unitPriceBySize[selectedSize];
+              const sectionsUnitPrice = data.services[4].unitPriceBySize[selectedSize];
+        
+              if (unitPriceDisplay) unitPriceDisplay.textContent = `£${unitPrice}`;
+              if (elevationsUnitPriceDisplay) elevationsUnitPriceDisplay.textContent = `£${elevationsUnitPrice}`;
+              if (sectionsUnitPriceDisplay) sectionsUnitPriceDisplay.textContent = `£${sectionsUnitPrice}`;
+              return unitPrice;
+          }
+    
+          // Price Calculation Function
+          function updatePrice() {
+              const selectedLocationElement = document.querySelector('input[name="location"]:checked');
+        
+              if (!selectedLocationElement) return;
+        
+              const selectedLocation = selectedLocationElement.value;
+              const roundedSqm = getRoundedPropertySqm();
+              const selectedSize = getSizeBandFromSqm(roundedSqm);
+              const floorCount = parseInt(floorCountInput ? floorCountInput.value : 1) || 1;
+              const elevationsCount = parseInt(elevationsCountInput ? elevationsCountInput.value : 0) || 0;
+              const sectionsCount = parseInt(sectionsCountInput ? sectionsCountInput.value : 0) || 0;
+    
+              // Update selection pill
+              const locationLabel = data.locations.find(loc => loc.id === selectedLocation).label;
+              if (selectionPill) {
+                  if (roundedSqm === null) {
+                      selectionPill.textContent = `${locationLabel} • Enter size (sqm)`;
+                  } else {
+                      selectionPill.textContent = `${locationLabel} • ${roundedSqm} sqm`;
+                  }
+              }
+    
+              const basePrice = getMeasuredSurveyPrice(selectedLocation, roundedSqm);
+              const planningPrice = getTopographicalSurveyPrice(selectedLocation, roundedSqm);
+        
+              // Update breakdown visibility for planning
+              if (planningBreakdown) {
+                  if (togglePlanningReady && togglePlanningReady.checked && planningPrice > 0) {
+                      planningBreakdown.style.display = 'flex';
+                  } else {
+                      planningBreakdown.style.display = 'none';
+                  }
+              }
+
+              // Calculate existing prep price (including elevations and sections)
+              let existingPrice = 0;
+
+              if (toggleExistingPrep && toggleExistingPrep.checked) {
+                  const unitPrice = data.services[2].unitPriceBySize[selectedSize];
+                  const elevationsUnitPrice = data.services[3].unitPriceBySize[selectedSize];
+                  const sectionsUnitPrice = data.services[4].unitPriceBySize[selectedSize];
+            
+                  // Calculate total existing prep price including all components
+                  existingPrice = (unitPrice * floorCount) + // Per-Floor Fee
+                                (elevationsUnitPrice * elevationsCount) + // Per-Elevation Fee
+                                (sectionsUnitPrice * sectionsCount); // Per-Section Fee
+              }
+    
+              // Update breakdown visibility for existing prep
+              if (existingBreakdown) {
+                  if (toggleExistingPrep && toggleExistingPrep.checked && existingPrice > 0) {
+                      existingBreakdown.style.display = 'flex';
+                  } else {
+                      existingBreakdown.style.display = 'none';
+                  }
+              }
+
+              // Calculate proposed drawings price
+              let proposedPrice = 0;
+              if (toggleProposedPrep && toggleProposedPrep.checked) {
+                  proposedCheckboxes.forEach(checkbox => {
+                      if (checkbox && checkbox.checked) {
+                          const checkboxValue = window.pcdPricingBridge
+                              ? window.pcdPricingBridge.getSimpleProposedPrice(checkbox.id)
+                              : 100;
+                          proposedPrice += checkboxValue;
+                      }
+                  });
+              }
+
+              // Update breakdown visibility for proposed prep
+              if (proposedBreakdown) {
+                  if (toggleProposedPrep && toggleProposedPrep.checked && proposedPrice > 0) {
+                      proposedBreakdown.style.display = 'flex';
+                  } else {
+                      proposedBreakdown.style.display = 'none';
+                  }
+              }
+
+              // Update price displays
+              if (priceBase) priceBase.textContent = basePrice;
+              if (pricePlanning) pricePlanning.textContent = planningPrice;
+              if (priceExisting) priceExisting.textContent = existingPrice;
+              if (priceProposed) priceProposed.textContent = proposedPrice;
+
+              // Calculate total
+              const total = basePrice + planningPrice + existingPrice + proposedPrice;
+
+              // Format total price (0 decimal if integer, 2 decimals otherwise)
+              if (priceTotal) {
+                  priceTotal.textContent = Number.isInteger(total) ? total : total.toFixed(2);
+              }
+        
+              // Update hidden form fields
+              const hiddenTotalPrice = document.getElementById('hiddenTotalPrice');
+              const hiddenBasePrice = document.getElementById('hiddenBasePrice');
+              const hiddenPlanningPrice = document.getElementById('hiddenPlanningPrice');
+              const hiddenExistingPrice = document.getElementById('hiddenExistingPrice');
+              const hiddenProposedPrice = document.getElementById('hiddenProposedPrice');
+              const hiddenSelectedLocation = document.getElementById('hiddenSelectedLocation');
+              const hiddenSelectedSize = document.getElementById('hiddenSelectedSize');
+        
+              if (hiddenTotalPrice) hiddenTotalPrice.value = total;
+              if (hiddenBasePrice) hiddenBasePrice.value = basePrice;
+              if (hiddenPlanningPrice) hiddenPlanningPrice.value = planningPrice;
+              if (hiddenExistingPrice) hiddenExistingPrice.value = existingPrice;
+              if (hiddenProposedPrice) hiddenProposedPrice.value = proposedPrice;
+              if (hiddenSelectedLocation) hiddenSelectedLocation.value = selectedLocation;
+              if (hiddenSelectedSize) hiddenSelectedSize.value = selectedSize;
+              const hiddenSizeM2 = document.getElementById('hiddenSizeM2');
+              if (hiddenSizeM2) hiddenSizeM2.value = roundedSqm !== null ? roundedSqm : '';
+          }
+    
+          // Initial price calculation
+          updateUnitPrice();
+          updatePrice();
+    window.pcxSimpleUpdatePrice = function() {
+        updateUnitPrice();
+        updatePrice();
+    };
+
+    if (window.pcdPricingBridge) {
+        window.pcdPricingBridge.refreshSimpleProposedLabels();
+    }
+    
+          // Add real-time validation for contact fields
+          const userNameInput = document.getElementById('userName');
+          const userEmailInput = document.getElementById('userEmail');
+          const userPhoneInput = document.getElementById('userPhone');
+          const userAddressInput = document.getElementById('userAddress');
+          const nameGroup = document.getElementById('nameGroup');
+          const emailGroup = document.getElementById('emailGroup');
+          const addressGroup = document.getElementById('addressGroup');
+    
+          // Add event listeners to hide service selection error when any toggle changes
+          [toggleMeasuredSurvey, togglePlanningReady, toggleExistingPrep, toggleProposedPrep].forEach(toggle => {
+              if (toggle) {
+                  toggle.addEventListener('change', function() {
+                      const serviceSelectionError = document.getElementById('serviceSelectionError');
+                      if (serviceSelectionError) {
+                          serviceSelectionError.classList.remove('show');
+                      }
+                  });
+              }
+          });
+    
+          if (userNameInput) {
+              userNameInput.addEventListener('input', function() {
+                  if (this.value.trim()) {
+                      nameGroup.classList.remove('error');
+                  }
+              });
+          }
+    
+          if (userEmailInput) {
+              userEmailInput.addEventListener('input', function() {
+                  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                  if (this.value.trim() && emailRegex.test(this.value.trim())) {
+                      emailGroup.classList.remove('error');
+                  }
+              });
+          }
+
+          if (userAddressInput) {
+              userAddressInput.addEventListener('input', function() {
+                  if (this.value.trim() && addressGroup) {
+                      addressGroup.classList.remove('error');
+                  }
+              });
+          }
+      });
+
+      // Form submission handler
+      function pcxSimpleHandleFormSubmit(event) {
+          event.preventDefault();
+    
+          // Check if at least one service is selected
+          const toggleMeasuredSurvey = document.getElementById('toggle-measuredSurvey');
+          const togglePlanningReady = document.getElementById('toggle-planningReady');
+          const toggleExistingPrep = document.getElementById('toggle-existingPrep');
+          const toggleProposedPrep = document.getElementById('toggle-proposedPrep');
+          const serviceSelectionError = document.getElementById('serviceSelectionError');
+    
+          const anyServiceSelected = (toggleMeasuredSurvey && toggleMeasuredSurvey.checked) ||
+                                     (togglePlanningReady && togglePlanningReady.checked) ||
+                                     (toggleExistingPrep && toggleExistingPrep.checked) ||
+                                     (toggleProposedPrep && toggleProposedPrep.checked);
+    
+          if (!anyServiceSelected) {
+              // Show error message
+              if (serviceSelectionError) {
+                  serviceSelectionError.classList.add('show');
+              }
+              // Scroll to the error message
+              const contactFields = document.querySelector('.contact-fields');
+              if (contactFields) {
+                  contactFields.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+              return false;
+          } else {
+              // Hide error message if it was showing
+              if (serviceSelectionError) {
+                  serviceSelectionError.classList.remove('show');
+              }
+          }
+    
+          // Validate name and email fields
+          const userName = document.getElementById('userName');
+          const userEmail = document.getElementById('userEmail');
+          const userAddress = document.getElementById('userAddress');
+          const propertySqm = document.getElementById('propertySqm');
+          const nameGroup = document.getElementById('nameGroup');
+          const emailGroup = document.getElementById('emailGroup');
+          const addressGroup = document.getElementById('addressGroup');
+          const propertySqmGroup = document.getElementById('propertySqmGroup');
+    
+          let isValid = true;
+    
+          // Validate name
+          if (!userName.value.trim()) {
+              nameGroup.classList.add('error');
+              isValid = false;
+          } else {
+              nameGroup.classList.remove('error');
+          }
+    
+          // Validate email
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!userEmail.value.trim() || !emailRegex.test(userEmail.value.trim())) {
+              emailGroup.classList.add('error');
+              isValid = false;
+          } else {
+              emailGroup.classList.remove('error');
+          }
+
+          if (!userAddress.value.trim()) {
+              addressGroup.classList.add('error');
+              isValid = false;
+          } else {
+              addressGroup.classList.remove('error');
+          }
+
+          const rawSqm = propertySqm ? propertySqm.value.trim() : '';
+          const numSqm = rawSqm === '' ? null : Number(rawSqm);
+          const roundedSqm = numSqm !== null && Number.isFinite(numSqm) ? Math.round(numSqm) : null;
+          if (rawSqm === '' || roundedSqm === null || roundedSqm < 10) {
+              if (propertySqmGroup) propertySqmGroup.classList.add('error');
+              isValid = false;
+          } else if (propertySqmGroup) {
+              propertySqmGroup.classList.remove('error');
+          }
+    
+          // If validation fails, scroll to the contact fields and stop submission
+          if (!isValid) {
+              const contactFields = document.querySelector('.contact-fields');
+              if (contactFields) {
+                  contactFields.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+              return false;
+          }
+    
+          // Get form data
+          const formData = new FormData(document.getElementById('pricingForm'));
+    
+          // Convert FormData to regular object for easier handling
+          const data = {};
+          for (let [key, value] of formData.entries()) {
+              if (data[key]) {
+                  // Handle multiple values (like proposedTypes[])
+                  if (Array.isArray(data[key])) {
+                      data[key].push(value);
+                  } else {
+                      data[key] = [data[key], value];
+                  }
+              } else {
+                  data[key] = value;
+              }
+          }
+    
+          // Enhanced data structure with all details
+          const completeData = {
+              // Contact information
+              contact: {
+                  name: data.userName,
+                  email: data.userEmail,
+                  phone: data.userPhone || '',
+                  address: data.userAddress
+              },
+        
+              // Service selections
+              services: {
+                  measuredSurvey: {
+                      selected: data.measuredSurvey === "1", // Check if toggle is on
+                      description: "Full measured building survey"
+                  },
+                  topographicalSurvey: {
+                      selected: data.planningReady === "1",
+                      description: "Detailed site topographical survey"
+                  },
+                  existingDrawingsPrep: {
+                      selected: data.existingPrep === "1",
+                      description: "Per-Floor Fee",
+                      floorCount: parseInt(data.floorCount) || 1,
+                      elevationsCount: parseInt(data.elevationsCount) || 0,
+                      sectionsCount: parseInt(data.sectionsCount) || 0
+                  },
+                  proposedDrawingsPrep: {
+                      selected: data.proposedPrep === "1",
+                      description: "Select extension and conversion types",
+                      selectedTypes: data["proposedTypes[]"] || []
+                  }
+              },
+        
+              // Location and size
+              location: {
+                  selected: data.location,
+                  label: data.location === "homeCounties" ? "Home Counties" :
+                         data.location === "londonNorthEast" ? "London: North, NW & East (E, EC)" :
+                         data.location === "londonSouthWest" ? "London: South, SE, SW & West (W, WC)" : data.location
+              },
+        
+              propertySize: {
+                  sizeM2Input: data.propertySqm ? Number(data.propertySqm) : null,
+                  sizeM2: data.sizeM2 ? Number(data.sizeM2) : null,
+                  sizeBand: data.selectedSize || null,
+                  label: (data.sizeM2 ? data.sizeM2 : '') + " sqm"
+              },
+        
+              // Pricing breakdown
+              pricing: {
+                  basePrice: parseFloat(data.basePrice) || 0,
+                  topographicalSurvey: parseFloat(data.planningPrice) || 0,
+                  existingDrawingsPrep: parseFloat(data.existingPrice) || 0,
+                  proposedDrawingsPrep: parseFloat(data.proposedPrice) || 0,
+                  totalPrice: parseFloat(data.totalPrice) || 0
+              },
+        
+              // Raw form data (for backup/debugging)
+              rawFormData: data,
+        
+              calculatorMode: "simple",
+        
+              // Timestamp
+              submittedAt: new Date().toISOString(),
+        
+              // User summary
+              summary: {
+                  name: data.userName,
+                  email: data.userEmail,
+                  phone: data.userPhone || '',
+                  address: data.userAddress,
+                  location: data.location === "homeCounties" ? "Home Counties" :
+                           data.location === "londonNorthEast" ? "London: North, NW & East (E, EC)" :
+                           data.location === "londonSouthWest" ? "London: South, SE, SW & West (W, WC)" : data.location,
+                  size: (data.sizeM2 ? data.sizeM2 : '') + " sqm",
+                  servicesCount: [
+                      data.measuredSurvey === "1" ? "Measured Survey" : null,
+                      data.planningReady === "1" ? "Topographical Survey" : null,
+                      data.existingPrep === "1" ? "Existing Drawings Prep" : null,
+                      data.proposedPrep === "1" ? "Proposed Drawings Prep" : null
+                  ].filter(Boolean).length,
+                  totalPrice: "£" + (parseFloat(data.totalPrice) || 0)
+              }
+          };
+    
+          // Log the collected data (you can modify this to send to your server)
+          console.log('Complete Form Data:', completeData);
+    
+          pcdSubmitQuote(completeData)
+          .then(function (result) {
+              console.log('Success:', result);
+              // Show success toast
+              pcxSimpleShowToast('Success!', "Your quote request has been submitted successfully. We'll contact you soon!", 'success');
+              // Reset the form
+              document.getElementById('pricingForm').reset();
+              // Reset toggles to default state (Measured Survey checked, others unchecked)
+              const toggleMeasuredSurvey = document.getElementById('toggle-measuredSurvey');
+              const togglePlanningReady = document.getElementById('toggle-planningReady');
+              const toggleExistingPrep = document.getElementById('toggle-existingPrep');
+              const toggleProposedPrep = document.getElementById('toggle-proposedPrep');
+              if (toggleMeasuredSurvey) toggleMeasuredSurvey.checked = true;
+              if (togglePlanningReady) togglePlanningReady.checked = false;
+              if (toggleExistingPrep) toggleExistingPrep.checked = false;
+              if (toggleProposedPrep) toggleProposedPrep.checked = false;
+              // Reset controls visibility
+              const existingPrepControls = document.getElementById('existingPrepControls');
+              const proposedPrepControls = document.getElementById('proposedPrepControls');
+              if (existingPrepControls) existingPrepControls.classList.remove('active');
+              if (proposedPrepControls) proposedPrepControls.classList.remove('active');
+              // Hide all breakdowns
+              const planningBreakdown = document.getElementById('planningBreakdown');
+              const existingBreakdown = document.getElementById('existingBreakdown');
+              const proposedBreakdown = document.getElementById('proposedBreakdown');
+              if (planningBreakdown) planningBreakdown.style.display = 'none';
+              if (existingBreakdown) existingBreakdown.style.display = 'none';
+              if (proposedBreakdown) proposedBreakdown.style.display = 'none';
+              // Reset floor, elevations, and sections count to default
+              const floorCountInput = document.getElementById('floorCount');
+              const elevationsCountInput = document.getElementById('elevationsCount');
+              const sectionsCountInput = document.getElementById('sectionsCount');
+              if (floorCountInput) floorCountInput.value = 1;
+              if (elevationsCountInput) elevationsCountInput.value = 0;
+              if (sectionsCountInput) sectionsCountInput.value = 0;
+              // Uncheck all proposed drawings checkboxes
+              const proposedCheckboxes = document.querySelectorAll('input[name="proposedTypes[]"]');
+              proposedCheckboxes.forEach(checkbox => {
+                  checkbox.checked = false;
+              });
+              // Reset location to default (Home Counties)
+              const homeCountiesRadio = document.getElementById('homeCounties');
+              if (homeCountiesRadio) homeCountiesRadio.checked = true;
+              const propertySqmReset = document.getElementById('propertySqm');
+              if (propertySqmReset) propertySqmReset.value = 100;
+              // Remove error states from form groups
+              const nameGroup = document.getElementById('nameGroup');
+              const emailGroup = document.getElementById('emailGroup');
+              const addressGroupReset = document.getElementById('addressGroup');
+              const propertySqmGroupReset = document.getElementById('propertySqmGroup');
+              if (nameGroup) nameGroup.classList.remove('error');
+              if (emailGroup) emailGroup.classList.remove('error');
+              if (addressGroupReset) addressGroupReset.classList.remove('error');
+              if (propertySqmGroupReset) propertySqmGroupReset.classList.remove('error');
+              // Hide service selection error
+              const serviceSelectionError = document.getElementById('serviceSelectionError');
+              if (serviceSelectionError) serviceSelectionError.classList.remove('show');
+              // Reset price displays to default values
+              const priceBase = document.getElementById('priceBase');
+              const pricePlanning = document.getElementById('pricePlanning');
+              const priceExisting = document.getElementById('priceExisting');
+              const priceProposed = document.getElementById('priceProposed');
+              const priceTotal = document.getElementById('priceTotal');
+              const selectionPill = document.getElementById('selectionPill');
+              if (typeof window.pcxSimpleUpdatePrice === 'function') {
+                  window.pcxSimpleUpdatePrice();
+              }
+          })
+          .catch(error => {
+              console.error('Error:', error);
+              // Show error toast
+              pcxSimpleShowToast('Error!', 'There was an issue submitting your request. Please try again or contact us directly.', 'error');
+          });
+    
+          return false;
+      }
+
+      // Toast notification functions
+      function pcxSimpleShowToast(title = 'Success!', message = "Your quote request has been submitted successfully. We'll contact you soon!", type = 'success') {
+          const toast = document.getElementById('successToast');
+          const toastTitle = toast.querySelector('.toast-title');
+          const toastMessage = toast.querySelector('.toast-message');
+    
+          // Update content
+          toastTitle.textContent = title;
+          toastMessage.textContent = message;
+    
+          // Update styling based on type
+          if (type === 'error') {
+              toast.style.backgroundColor = '#ef4444';
+          } else {
+              toast.style.backgroundColor = '#10b981';
+          }
+    
+          // Show toast
+          toast.classList.add('show');
+    
+          // Auto-hide after 5 seconds
+          setTimeout(() => {
+              pcxSimpleCloseToast();
+          }, 5000);
+      }
+
+      function pcxSimpleCloseToast() {
+          const toast = document.getElementById('successToast');
+          toast.classList.remove('show');
+          toast.classList.add('hide');
+    
+          // Reset classes after animation
+          setTimeout(() => {
+              toast.classList.remove('hide');
+          }, 400);
+      }
+      </script>
+    </div>
+
+    <div id="pcx-mode-complex" class="pcx-mode-panel pcx-hidden" aria-hidden="true">
+    <div class="pcx-calculator" id="pcx-calculator">
+    <style>
+      .pcx-calculator {
+        --primary: #08473C;
+        --primary-dark: #06352b;
+        --bg: #fff;
+        --text: #0f172a;
+        --muted: #64748b;
+        --card: #ffffff;
+        --border: #e5e7eb;
+        --shadow: 0 6px 24px rgba(0,0,0,.08);
+        --radius-xl: 20px;
+        --radius-md: 12px;
+        --danger: #dc2626;
+        --danger-bg: #fee2e2;
+        --success: #10b981;
+        --warning: #b45309;
+        --warning-bg: #fffbeb;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+        line-height: 1.5;
+      }
+  
+      .pcx-calculator *,
+      .pcx-calculator *::before,
+      .pcx-calculator *::after {
+        box-sizing: border-box;
+      }
+  
+      .pcx-calculator .pcx-container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+  
+      .pcx-calculator .pcx-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+  
+      @media (min-width: 992px) {
+        .pcx-calculator .pcx-layout {
+          flex-direction: row;
+          align-items: flex-start;
+        }
+  
+        .pcx-calculator .pcx-left {
+          flex: 1.1;
+          min-width: 0;
+        }
+  
+        .pcx-calculator .pcx-right {
+          flex: 0.9;
+          min-width: 360px;
+        }
+      }
+  
+      .pcx-calculator h1,
+      .pcx-calculator h2,
+      .pcx-calculator h3,
+      .pcx-calculator h4,
+      .pcx-calculator p {
+        margin-top: 0;
+      }
+  
+      .pcx-calculator h1 {
+        font-size: 2rem;
+        line-height: 1.15;
+        margin-bottom: 8px;
+        color: var(--text);
+      }
+  
+      .pcx-calculator .pcx-intro {
+        color: var(--muted);
+        margin-bottom: 24px;
+        font-size: 1rem;
+      }
+  
+      .pcx-calculator .pcx-card,
+      .pcx-calculator .pcx-summary {
+        background: var(--card);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow);
+        padding: 24px;
+      }
+  
+      .pcx-calculator .pcx-summary {
+        position: sticky;
+        top: 16px;
+      }
+  
+      @media (max-width: 991px) {
+        .pcx-calculator .pcx-summary {
+          position: static;
+        }
+      }
+  
+      .pcx-calculator .pcx-service-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--border);
+      }
+  
+      .pcx-calculator .pcx-service-row:first-child {
+        padding-top: 0;
+      }
+  
+      .pcx-calculator .pcx-service-row:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+  
+      .pcx-calculator .pcx-service-info {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        min-width: 0;
+      }
+  
+      .pcx-calculator .pcx-service-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(8,71,60,0.1);
+        color: var(--primary);
+        flex-shrink: 0;
+        font-size: 1.1rem;
+      }
+  
+      .pcx-calculator .pcx-service-text h3,
+      .pcx-calculator .pcx-service-text h4 {
+        margin: 0 0 4px;
+        font-size: 1rem;
+        line-height: 1.2;
+        color: var(--text);
+      }
+  
+      .pcx-calculator .pcx-service-text p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.45;
+      }
+  
+      .pcx-calculator .pcx-toggle {
+        position: relative;
+        width: 52px;
+        height: 28px;
+        flex-shrink: 0;
+      }
+  
+      .pcx-calculator .pcx-toggle input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+  
+      .pcx-calculator .pcx-toggle span {
+        position: absolute;
+        inset: 0;
+        border-radius: 999px;
+        background: #cbd5e1;
+        cursor: pointer;
+        transition: 0.25s ease;
+      }
+  
+      .pcx-calculator .pcx-toggle span::before {
+        content: "";
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        left: 4px;
+        top: 4px;
+        border-radius: 50%;
+        background: #fff;
+        transition: 0.25s ease;
+      }
+  
+      .pcx-calculator .pcx-toggle input:checked + span {
+        background: var(--primary);
+      }
+  
+      .pcx-calculator .pcx-toggle input:checked + span::before {
+        transform: translateX(24px);
+      }
+  
+      .pcx-calculator .pcx-toggle input:focus + span {
+        box-shadow: 0 0 0 3px rgba(8,71,60,0.15);
+      }
+  
+      .pcx-calculator .pcx-section {
+        display: none;
+        margin-top: 18px;
+        border-top: 1px solid var(--border);
+        padding-top: 18px;
+      }
+  
+      .pcx-calculator .pcx-section.active {
+        display: block;
+      }
+  
+      .pcx-calculator .pcx-section-title {
+        font-size: 1.05rem;
+        margin-bottom: 8px;
+        color: var(--text);
+      }
+  
+      .pcx-calculator .pcx-section-subtitle {
+        font-size: 0.9rem;
+        color: var(--muted);
+        margin-bottom: 16px;
+      }
+  
+      .pcx-calculator .pcx-split {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+  
+      @media (min-width: 768px) {
+        .pcx-calculator .pcx-split {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+  
+      .pcx-calculator .pcx-panel {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        background: rgba(15,23,42,0.02);
+      }
+  
+      .pcx-calculator .pcx-panel h4 {
+        margin-bottom: 6px;
+        font-size: 0.96rem;
+        color: var(--text);
+      }
+  
+      .pcx-calculator .pcx-panel > p {
+        margin-bottom: 12px;
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+  
+      .pcx-calculator .pcx-subservice {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        background: rgba(15, 23, 42, 0.03);
+        border: 1px solid rgba(15, 23, 42, 0.05);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        margin-bottom: 14px;
+      }
+
+      .pcx-calculator .pcx-subservice:last-child {
+        margin-bottom: 0;
+      }
+
+      .pcx-calculator .pcx-subservice .pcx-service-info {
+        flex: 1 1 140px;
+        min-width: 0;
+      }
+
+      .pcx-calculator .pcx-qty {
+        display: inline-flex;
+        align-items: center;
+        flex-wrap: nowrap;
+        flex-shrink: 0;
+        gap: 8px;
+        margin-top: 0;
+      }
+
+      .pcx-calculator .pcx-qty span {
+        font-size: 0.92rem;
+        color: var(--text);
+        min-width: 0;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+  
+      .pcx-calculator input[type="number"],
+      .pcx-calculator input[type="text"],
+      .pcx-calculator input[type="email"],
+      .pcx-calculator select {
+        border: 1px solid var(--border);
+        background: #fff;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        color: var(--text);
+        width: 100%;
+      }
+  
+      .pcx-calculator .pcx-qty input[type="number"] {
+        width: 56px;
+        min-width: 56px;
+        max-width: 56px;
+        flex: 0 0 56px;
+        text-align: center;
+        padding: 8px 6px;
+      }
+
+      .pcx-calculator .pcx-qty button {
+        width: 32px;
+        min-width: 32px;
+        height: 32px;
+        flex-shrink: 0;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #fff;
+        cursor: pointer;
+        font-size: 1rem;
+        padding: 0;
+      }
+  
+      .pcx-calculator .pcx-qty button:hover {
+        background: #f8fafc;
+      }
+  
+      .pcx-calculator .pcx-selector {
+        margin-top: 24px;
+      }
+  
+      .pcx-calculator .pcx-selector h3 {
+        font-size: 1.05rem;
+        margin-bottom: 12px;
+        color: var(--text);
+      }
+  
+      .pcx-calculator .pcx-radio-cards {
+        display: grid;
+        gap: 12px;
+      }
+  
+      .pcx-calculator .pcx-radio-card {
+        display: block;
+        border: 2px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 14px 16px;
+        cursor: pointer;
+        transition: 0.2s ease;
+        background: #fff;
+      }
+  
+      .pcx-calculator .pcx-radio-card:hover {
+        border-color: var(--primary);
+      }
+  
+      .pcx-calculator .pcx-radio-card input {
+        display: none;
+      }
+  
+      .pcx-calculator .pcx-radio-card input:checked + span {
+        color: var(--primary);
+        font-weight: 700;
+      }
+  
+      .pcx-calculator .pcx-radio-card:has(input:checked) {
+        border-color: var(--primary);
+        background: rgba(8,71,60,0.03);
+      }
+  
+      .pcx-calculator .pcx-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+  
+      .pcx-calculator .pcx-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 10px 14px;
+        cursor: pointer;
+        min-width: 92px;
+        transition: 0.2s ease;
+        background: #fff;
+      }
+  
+      .pcx-calculator .pcx-pill:hover {
+        border-color: var(--primary);
+      }
+  
+      .pcx-calculator .pcx-pill input {
+        display: none;
+      }
+  
+      .pcx-calculator .pcx-pill:has(input:checked) {
+        border-color: var(--primary);
+        background: rgba(8,71,60,0.06);
+        color: var(--primary);
+        font-weight: 700;
+      }
+  
+      .pcx-calculator .pcx-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+      }
+  
+      .pcx-calculator .pcx-check {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        background: #fff;
+        cursor: pointer;
+        transition: 0.2s ease;
+        min-height: 54px;
+      }
+  
+      .pcx-calculator .pcx-check:hover {
+        border-color: var(--primary);
+        background: rgba(8,71,60,0.02);
+      }
+  
+      .pcx-calculator .pcx-check input[type="checkbox"] {
+        display: none;
+      }
+  
+      .pcx-calculator .pcx-checkmark {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--border);
+        border-radius: 6px;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 1px;
+        transition: 0.2s ease;
+      }
+  
+      .pcx-calculator .pcx-check input[type="checkbox"]:checked + .pcx-checkmark {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: #fff;
+      }
+  
+      .pcx-calculator .pcx-check input[type="checkbox"]:checked + .pcx-checkmark::after {
+        content: "✓";
+        font-size: 13px;
+        font-weight: 700;
+      }
+  
+      .pcx-calculator .pcx-check:has(input[type="checkbox"]:checked) {
+        border-color: var(--primary);
+        background: rgba(8,71,60,0.04);
+      }
+  
+      .pcx-calculator .pcx-check-label {
+        font-size: 0.93rem;
+        line-height: 1.35;
+        color: var(--text);
+      }
+  
+      .pcx-calculator .pcx-form-group {
+        margin-bottom: 14px;
+      }
+  
+      .pcx-calculator .pcx-form-group:last-child {
+        margin-bottom: 0;
+      }
+  
+      .pcx-calculator .pcx-form-group label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+  
+      .pcx-calculator .pcx-form-group.error input,
+      .pcx-calculator .pcx-form-group.error select {
+        border-color: var(--danger);
+      }
+  
+      .pcx-calculator .pcx-error {
+        display: none;
+        margin-top: 6px;
+        color: var(--danger);
+        font-size: 0.84rem;
+      }
+  
+      .pcx-calculator .pcx-form-group.error .pcx-error {
+        display: block;
+      }
+  
+      .pcx-calculator .pcx-note {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 0.84rem;
+      }
+  
+      .pcx-calculator .pcx-pill-summary {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 14px;
+        border-radius: 999px;
+        background: rgba(8,71,60,0.08);
+        color: var(--primary);
+        font-weight: 600;
+        font-size: 0.92rem;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+      }
+  
+      .pcx-calculator .pcx-price {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+      }
+  
+      .pcx-calculator .pcx-price-main {
+        font-size: 2.7rem;
+        font-weight: 800;
+        line-height: 1;
+        color: var(--text);
+      }
+  
+      .pcx-calculator .pcx-price-label {
+        color: var(--muted);
+        font-size: 1rem;
+      }
+  
+      .pcx-calculator .pcx-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 22px;
+      }
+  
+      .pcx-calculator .pcx-list li {
+        position: relative;
+        padding-left: 22px;
+        margin-bottom: 10px;
+        color: var(--text);
+        font-size: 0.95rem;
+      }
+  
+      .pcx-calculator .pcx-list li::before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: var(--primary);
+        font-weight: 700;
+      }
+  
+      .pcx-calculator .pcx-contact {
+        margin: 0 0 18px;
+        padding: 18px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: rgba(8,71,60,0.04);
+      }
+  
+      .pcx-calculator .pcx-contact h4 {
+        margin-bottom: 14px;
+        color: var(--text);
+      }
+  
+      .pcx-calculator .pcx-service-error {
+        display: none;
+        margin-bottom: 14px;
+        padding: 12px 14px;
+        background: var(--danger-bg);
+        color: var(--danger);
+        border: 1px solid var(--danger);
+        border-radius: 10px;
+        font-size: 0.9rem;
+        font-weight: 600;
+      }
+  
+      .pcx-calculator .pcx-service-error.show {
+        display: block;
+      }
+  
+      .pcx-calculator .pcx-submit {
+        width: 100%;
+        padding: 15px 16px;
+        border: none;
+        border-radius: var(--radius-md);
+        background: var(--primary);
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.2s ease;
+        margin-bottom: 18px;
+      }
+  
+      .pcx-calculator .pcx-submit:hover {
+        background: var(--primary-dark);
+      }
+  
+      .pcx-calculator .pcx-status {
+        margin-top: 16px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        line-height: 1.45;
+        display: none;
+      }
+  
+      .pcx-calculator .pcx-status.show {
+        display: block;
+      }
+  
+      .pcx-calculator .pcx-status.warning {
+        background: var(--warning-bg);
+        color: var(--warning);
+        border: 1px solid #f59e0b;
+      }
+  
+      .pcx-calculator .pcx-status.success {
+        background: rgba(16, 185, 129, 0.08);
+        color: #065f46;
+        border: 1px solid rgba(16, 185, 129, 0.25);
+      }
+  
+      .pcx-calculator .pcx-breakdown {
+        border-top: 1px solid var(--border);
+        padding-top: 16px;
+        display: grid;
+        gap: 8px;
+      }
+  
+      .pcx-calculator .pcx-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        font-size: 0.9rem;
+      }
+  
+      .pcx-calculator .pcx-row .label {
+        color: var(--muted);
+      }
+  
+      .pcx-calculator .pcx-row .value {
+        color: var(--text);
+        font-weight: 600;
+        text-align: right;
+        white-space: nowrap;
+      }
+  
+      .pcx-calculator .pcx-row.total {
+        padding-top: 10px;
+        margin-top: 4px;
+        border-top: 1px dashed var(--border);
+        font-size: 1rem;
+      }
+  
+      .pcx-calculator .pcx-row.total .label,
+      .pcx-calculator .pcx-row.total .value {
+        color: var(--text);
+        font-weight: 800;
+      }
+  
+      .pcx-calculator .pcx-hidden {
+        display: none !important;
+      }
+  
+      .pcx-calculator .pcx-toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 320px;
+        max-width: 520px;
+        background: var(--success);
+        color: #fff;
+        border-radius: 14px;
+        box-shadow: 0 10px 40px rgba(0,0,0,.18);
+        padding: 14px 16px;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        opacity: 0;
+        transform: translateX(380px);
+        transition: 0.35s ease;
+        pointer-events: none;
+      }
+  
+      .pcx-calculator .pcx-toast.show {
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: auto;
+      }
+  
+      .pcx-calculator .pcx-toast.hide {
+        opacity: 0;
+        transform: translateX(380px);
+      }
+  
+      .pcx-calculator .pcx-toast-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.18);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-weight: 800;
+      }
+  
+      .pcx-calculator .pcx-toast-title {
+        font-size: 0.96rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+  
+      .pcx-calculator .pcx-toast-message {
+        font-size: 0.88rem;
+        line-height: 1.45;
+        opacity: 0.95;
+      }
+  
+      .pcx-calculator .pcx-toast-close {
+        margin-left: auto;
+        border: none;
+        background: transparent;
+        color: #fff;
+        font-size: 1.3rem;
+        cursor: pointer;
+        line-height: 1;
+        opacity: 0.85;
+      }
+  
+      .pcx-calculator .pcx-toast-close:hover {
+        opacity: 1;
+      }
+  
+      @media (max-width: 640px) {
+        .pcx-calculator .pcx-container {
+          padding: 6px;
+        }
+  
+        .pcx-calculator .pcx-card,
+        .pcx-calculator .pcx-summary {
+          padding: 18px;
+        }
+  
+        .pcx-calculator h1 {
+          font-size: 1.65rem;
+        }
+  
+        .pcx-calculator .pcx-price-main {
+          font-size: 2.2rem;
+        }
+  
+        .pcx-calculator .pcx-toast {
+          left: 10px;
+          right: 10px;
+          top: 10px;
+          min-width: auto;
+          max-width: none;
+          transform: translateY(-100px);
+        }
+  
+        .pcx-calculator .pcx-toast.show {
+          transform: translateY(0);
+        }
+  
+        .pcx-calculator .pcx-toast.hide {
+          transform: translateY(-100px);
+        }
+      }
+    </style>
+  
+    <div class="pcx-container">
+      <form class="pcx-form" novalidate>
+        <div class="pcx-layout">
+          <div class="pcx-left">
+            <h1>Ensure Your Projects Run Smoothly</h1>
+            <p class="pcx-intro">Measured surveys and drawing preparation with complexity-based pricing logic.</p>
+  
+            <div class="pcx-card">
+              <div class="pcx-service-row">
+                <div class="pcx-service-info">
+                  <div class="pcx-service-icon">📏</div>
+                  <div class="pcx-service-text">
+                    <h3>Measured Survey</h3>
+                    <p>Full measured building survey using location and £/sqm band rates.</p>
+                  </div>
+                </div>
+                <label class="pcx-toggle">
+                  <input type="checkbox" data-role="toggle-measured" checked>
+                  <span></span>
+                </label>
+              </div>
+  
+              <div class="pcx-service-row">
+                <div class="pcx-service-info">
+                  <div class="pcx-service-icon">🧭</div>
+                  <div class="pcx-service-text">
+                    <h3>Topographical Survey</h3>
+                    <p>Detailed site topographical survey using location and £/sqm band rates.</p>
+                  </div>
+                </div>
+                <label class="pcx-toggle">
+                  <input type="checkbox" data-role="toggle-topo">
+                  <span></span>
+                </label>
+              </div>
+  
+              <div class="pcx-service-row">
+                <div class="pcx-service-info">
+                  <div class="pcx-service-icon">🗂️</div>
+                  <div class="pcx-service-text">
+                    <h3>Existing Drawings Preparation</h3>
+                    <p>Base fees × complexity multiplier × size multiplier.</p>
+                  </div>
+                </div>
+                <label class="pcx-toggle">
+                  <input type="checkbox" data-role="toggle-existing">
+                  <span></span>
+                </label>
+              </div>
+  
+              <div class="pcx-section" data-role="existing-section">
+                <h3 class="pcx-section-title">Existing drawings setup</h3>
+                <p class="pcx-section-subtitle">Enter drawing quantities, then select the complexity features that apply.</p>
+  
+                <div class="pcx-split">
+                  <div class="pcx-panel">
+                    <h4>Existing drawing quantities</h4>
+                    <p>Base fees are calculated from the number of drawing outputs.</p>
+  
+                    <div class="pcx-subservice">
+                      <div class="pcx-service-info">
+                        <div class="pcx-service-icon">🏢</div>
+                        <div class="pcx-service-text">
+                          <h4>Floor Plans</h4>
+                          <p>£40 each</p>
+                        </div>
+                      </div>
+                      <div class="pcx-qty">
+                        <span>Qty</span>
+                        <button type="button" data-step-target="existingFloorPlans" data-step="-1">-</button>
+                        <input type="number" id="existingFloorPlans" min="0" value="1">
+                        <button type="button" data-step-target="existingFloorPlans" data-step="1">+</button>
+                      </div>
+                    </div>
+  
+                    <div class="pcx-subservice">
+                      <div class="pcx-service-info">
+                        <div class="pcx-service-icon">🏛️</div>
+                        <div class="pcx-service-text">
+                          <h4>Elevations</h4>
+                          <p>£40 each</p>
+                        </div>
+                      </div>
+                      <div class="pcx-qty">
+                        <span>Qty</span>
+                        <button type="button" data-step-target="existingElevations" data-step="-1">-</button>
+                        <input type="number" id="existingElevations" min="0" value="0">
+                        <button type="button" data-step-target="existingElevations" data-step="1">+</button>
+                      </div>
+                    </div>
+  
+                    <div class="pcx-subservice">
+                      <div class="pcx-service-info">
+                        <div class="pcx-service-icon">✂️</div>
+                        <div class="pcx-service-text">
+                          <h4>Sections</h4>
+                          <p>£40 each</p>
+                        </div>
+                      </div>
+                      <div class="pcx-qty">
+                        <span>Qty</span>
+                        <button type="button" data-step-target="existingSections" data-step="-1">-</button>
+                        <input type="number" id="existingSections" min="0" value="0">
+                        <button type="button" data-step-target="existingSections" data-step="1">+</button>
+                      </div>
+                    </div>
+  
+                    <div class="pcx-subservice">
+                      <div class="pcx-service-info">
+                        <div class="pcx-service-icon">🏠</div>
+                        <div class="pcx-service-text">
+                          <h4>Roof Plans</h4>
+                          <p>£40 each</p>
+                        </div>
+                      </div>
+                      <div class="pcx-qty">
+                        <span>Qty</span>
+                        <button type="button" data-step-target="existingRoofPlans" data-step="-1">-</button>
+                        <input type="number" id="existingRoofPlans" min="0" value="0">
+                        <button type="button" data-step-target="existingRoofPlans" data-step="1">+</button>
+                      </div>
+                    </div>
+  
+                    <div class="pcx-subservice">
+                      <div class="pcx-service-info">
+                        <div class="pcx-service-icon">🗺️</div>
+                        <div class="pcx-service-text">
+                          <h4>Topographical Plans</h4>
+                          <p>£40 each</p>
+                        </div>
+                      </div>
+                      <div class="pcx-qty">
+                        <span>Qty</span>
+                        <button type="button" data-step-target="existingTopographicalPlans" data-step="-1">-</button>
+                        <input type="number" id="existingTopographicalPlans" min="0" value="0">
+                        <button type="button" data-step-target="existingTopographicalPlans" data-step="1">+</button>
+                      </div>
+                    </div>
+  
+                    <div class="pcx-subservice">
+                      <div class="pcx-service-info">
+                        <div class="pcx-service-icon">🧱</div>
+                        <div class="pcx-service-text">
+                          <h4>Interior Elevations</h4>
+                          <p>£20 each</p>
+                        </div>
+                      </div>
+                      <div class="pcx-qty">
+                        <span>Qty</span>
+                        <button type="button" data-step-target="existingInteriorElevations" data-step="-1">-</button>
+                        <input type="number" id="existingInteriorElevations" min="0" value="0">
+                        <button type="button" data-step-target="existingInteriorElevations" data-step="1">+</button>
+                      </div>
+                    </div>
+  
+                    <div class="pcx-subservice">
+                      <div class="pcx-service-info">
+                        <div class="pcx-service-icon">📍</div>
+                        <div class="pcx-service-text">
+                          <h4>Basic Site Plans</h4>
+                          <p>£100 each</p>
+                        </div>
+                      </div>
+                      <div class="pcx-qty">
+                        <span>Qty</span>
+                        <button type="button" data-step-target="existingBasicSitePlans" data-step="-1">-</button>
+                        <input type="number" id="existingBasicSitePlans" min="0" value="0">
+                        <button type="button" data-step-target="existingBasicSitePlans" data-step="1">+</button>
+                      </div>
+                    </div>
+                  </div>
+  
+                  <div class="pcx-panel">
+                    <h4>Existing complexity features</h4>
+                    <p>Select the different complexity types that apply to the building.</p>
+  
+                    <div class="pcx-grid" data-role="existing-complexity-group">
+                      <label class="pcx-check">
+                        <input type="checkbox" value="bayWindows">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Bay windows</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="multipleExtensionDepths">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Multiple extension depths</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="decorativeFeatures">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Decorative façade features</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="over3Floors">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Building over 3 floors</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="highDetailVariation">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">High detail variation</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="manyMaterialChanges">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Many material changes</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="manySocketsOrServices">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Many sockets or services</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="loftConversion">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Loft conversion present</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="internalLevelChanges">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Internal level changes</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="splitLevels">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Split levels</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="curvedWallsMultiple">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Multiple curved walls</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="angledWallsMultiple">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Multiple angled walls</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="roofPitchTypesOver2">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">More than 2 roof pitch types</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="irregularLayout">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Irregular layout</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="rearExtension">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Rear extension</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="sideExtension">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Side extension</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="dormerWindows">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Dormer windows</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="differentFacades">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Different facades</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="complicatedSectionRequired">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Complicated section (if a section is required)</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="complicatedRoofOrDifferentRoofType">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Complicated roof or different roof type</span>
+                      </label>
+                      <label class="pcx-check">
+                        <input type="checkbox" value="detailedInternalElevations">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Detailed internal elevations</span>
+                      </label>
+                    </div>
+  
+                    <div class="pcx-form-group" style="margin-top:16px;">
+                      <label for="existingRepetitionLevel">Repetition severity</label>
+                      <select id="existingRepetitionLevel">
+                        <option value="none">None</option>
+                        <option value="moderate">Moderate</option>
+                        <option value="heavy">Heavy</option>
+                      </select>
+                    </div>
+  
+                    <div class="pcx-note">
+                      Heavy repetition can bump the complexity level up even if the count is lower.
+                    </div>
+                  </div>
+                </div>
+              </div>
+  
+              <div class="pcx-service-row">
+                <div class="pcx-service-info">
+                  <div class="pcx-service-icon">🏗️</div>
+                  <div class="pcx-service-text">
+                    <h3>Proposed Drawings Preparation</h3>
+                    <p>Base fees × complexity multiplier × size multiplier only for new build.</p>
+                  </div>
+                </div>
+                <label class="pcx-toggle">
+                  <input type="checkbox" data-role="toggle-proposed">
+                  <span></span>
+                </label>
+              </div>
+  
+              <div class="pcx-section" data-role="proposed-section">
+                <h3 class="pcx-section-title">Proposed drawings setup</h3>
+                <p class="pcx-section-subtitle">Choose affected drawings and classify the scope of the proposed work.</p>
+  
+                <div class="pcx-split">
+                  <div class="pcx-panel">
+                    <h4>Drawings affected</h4>
+                    <p>These are the base fee inputs for proposed drawings.</p>
+  
+                    <div class="pcx-subservice">
+                      <div class="pcx-service-info">
+                        <div class="pcx-service-icon">🏢</div>
+                        <div class="pcx-service-text">
+                          <h4>Floor Plans Affected</h4>
+                          <p>£30 each</p>
+                        </div>
+                      </div>
+                      <div class="pcx-qty">
+                        <span>Qty</span>
+                        <button type="button" data-step-target="proposedFloorPlansAffected" data-step="-1">-</button>
+                        <input type="number" id="proposedFloorPlansAffected" min="0" value="1">
+                        <button type="button" data-step-target="proposedFloorPlansAffected" data-step="1">+</button>
+                      </div>
+                    </div>
+  
+                    <div class="pcx-subservice">
+                      <div class="pcx-service-info">
+                        <div class="pcx-service-icon">🏛️</div>
+                        <div class="pcx-service-text">
+                          <h4>Elevations Affected</h4>
+                          <p>£30 each</p>
+                        </div>
+                      </div>
+                      <div class="pcx-qty">
+                        <span>Qty</span>
+                        <button type="button" data-step-target="proposedElevationsAffected" data-step="-1">-</button>
+                        <input type="number" id="proposedElevationsAffected" min="0" value="0">
+                        <button type="button" data-step-target="proposedElevationsAffected" data-step="1">+</button>
+                      </div>
+                    </div>
+  
+                    <div class="pcx-subservice">
+                      <div class="pcx-service-info">
+                        <div class="pcx-service-icon">✂️</div>
+                        <div class="pcx-service-text">
+                          <h4>Sections Affected</h4>
+                          <p>£30 each</p>
+                        </div>
+                      </div>
+                      <div class="pcx-qty">
+                        <span>Qty</span>
+                        <button type="button" data-step-target="proposedSectionsAffected" data-step="-1">-</button>
+                        <input type="number" id="proposedSectionsAffected" min="0" value="0">
+                        <button type="button" data-step-target="proposedSectionsAffected" data-step="1">+</button>
+                      </div>
+                    </div>
+  
+                    <div class="pcx-subservice">
+                      <div class="pcx-service-info">
+                        <div class="pcx-service-icon">🏠</div>
+                        <div class="pcx-service-text">
+                          <h4>Roof Plans Affected</h4>
+                          <p>£30 each</p>
+                        </div>
+                      </div>
+                      <div class="pcx-qty">
+                        <span>Qty</span>
+                        <button type="button" data-step-target="proposedRoofPlansAffected" data-step="-1">-</button>
+                        <input type="number" id="proposedRoofPlansAffected" min="0" value="0">
+                        <button type="button" data-step-target="proposedRoofPlansAffected" data-step="1">+</button>
+                      </div>
+                    </div>
+  
+                    <div class="pcx-subservice">
+                      <div class="pcx-service-info">
+                        <div class="pcx-service-icon">📍</div>
+                        <div class="pcx-service-text">
+                          <h4>Basic Site Plans Affected</h4>
+                          <p>£30 each</p>
+                        </div>
+                      </div>
+                      <div class="pcx-qty">
+                        <span>Qty</span>
+                        <button type="button" data-step-target="proposedBasicSitePlansAffected" data-step="-1">-</button>
+                        <input type="number" id="proposedBasicSitePlansAffected" min="0" value="0">
+                        <button type="button" data-step-target="proposedBasicSitePlansAffected" data-step="1">+</button>
+                      </div>
+                    </div>
+  
+                    <div class="pcx-subservice">
+                      <div class="pcx-service-info">
+                        <div class="pcx-service-icon">🗺️</div>
+                        <div class="pcx-service-text">
+                          <h4>Topographical Plans Affected</h4>
+                          <p>£30 each</p>
+                        </div>
+                      </div>
+                      <div class="pcx-qty">
+                        <span>Qty</span>
+                        <button type="button" data-step-target="proposedTopographicalPlansAffected" data-step="-1">-</button>
+                        <input type="number" id="proposedTopographicalPlansAffected" min="0" value="0">
+                        <button type="button" data-step-target="proposedTopographicalPlansAffected" data-step="1">+</button>
+                      </div>
+                    </div>
+  
+                    <div class="pcx-subservice">
+                      <div class="pcx-service-info">
+                        <div class="pcx-service-icon">🧱</div>
+                        <div class="pcx-service-text">
+                          <h4>Interior Elevations Affected</h4>
+                          <p>£10 each</p>
+                        </div>
+                      </div>
+                      <div class="pcx-qty">
+                        <span>Qty</span>
+                        <button type="button" data-step-target="proposedInteriorElevationsAffected" data-step="-1">-</button>
+                        <input type="number" id="proposedInteriorElevationsAffected" min="0" value="0">
+                        <button type="button" data-step-target="proposedInteriorElevationsAffected" data-step="1">+</button>
+                      </div>
+                    </div>
+  
+                    <div class="pcx-subservice">
+                      <div class="pcx-service-info">
+                        <div class="pcx-service-icon">📌</div>
+                        <div class="pcx-service-text">
+                          <h4>Basic Location / Site Plans Affected</h4>
+                          <p>£20 each</p>
+                        </div>
+                      </div>
+                      <div class="pcx-qty">
+                        <span>Qty</span>
+                        <button type="button" data-step-target="proposedBasicLocationPlansAffected" data-step="-1">-</button>
+                        <input type="number" id="proposedBasicLocationPlansAffected" min="0" value="0">
+                        <button type="button" data-step-target="proposedBasicLocationPlansAffected" data-step="1">+</button>
+                      </div>
+                    </div>
+                  </div>
+  
+                  <div class="pcx-panel">
+                    <h4>Proposed scope classification</h4>
+                    <p>Use these flags to determine complexity level for proposed work.</p>
+  
+                    <div class="pcx-grid" data-role="proposed-scope-group">
+                      <label class="pcx-check"><input type="checkbox" value="noPhysicalDesignChange"><span class="pcx-checkmark"></span><span class="pcx-check-label">No physical design change</span></label>
+                      <label class="pcx-check"><input type="checkbox" value="annotationChangesOnly"><span class="pcx-checkmark"></span><span class="pcx-check-label">Annotation changes only</span></label>
+                      <label class="pcx-check"><input type="checkbox" value="roomNameChangesOnly"><span class="pcx-checkmark"></span><span class="pcx-check-label">Room name changes only</span></label>
+                      <label class="pcx-check"><input type="checkbox" value="minorMaterialChanges"><span class="pcx-checkmark"></span><span class="pcx-check-label">Minor material changes</span></label>
+                      <label class="pcx-check"><input type="checkbox" value="minorInternalWallsOnly"><span class="pcx-checkmark"></span><span class="pcx-check-label">Minor internal walls only</span></label>
+                      <label class="pcx-check"><input type="checkbox" value="internalWallsAddedOrRemoved"><span class="pcx-checkmark"></span><span class="pcx-check-label">Internal walls added or removed</span></label>
+                      <label class="pcx-check"><input type="checkbox" value="simpleWindowDoorAdditions"><span class="pcx-checkmark"></span><span class="pcx-check-label">Simple window or door additions</span></label>
+                      <label class="pcx-check"><input type="checkbox" value="someSitePlanChanges"><span class="pcx-checkmark"></span><span class="pcx-check-label">Some site plan changes</span></label>
+                      <label class="pcx-check"><input type="checkbox" value="simpleExtension"><span class="pcx-checkmark"></span><span class="pcx-check-label">Simple extension</span></label>
+                      <label class="pcx-check"><input type="checkbox" value="manyInternalChanges"><span class="pcx-checkmark"></span><span class="pcx-check-label">Many internal changes</span></label>
+                      <label class="pcx-check"><input type="checkbox" value="newBuild"><span class="pcx-checkmark"></span><span class="pcx-check-label">New build</span></label>
+                      <label class="pcx-check"><input type="checkbox" value="extension"><span class="pcx-checkmark"></span><span class="pcx-check-label">Major extension</span></label>
+                      <label class="pcx-check"><input type="checkbox" value="newStairs"><span class="pcx-checkmark"></span><span class="pcx-check-label">New stairs</span></label>
+                      <label class="pcx-check"><input type="checkbox" value="mansardRoof"><span class="pcx-checkmark"></span><span class="pcx-check-label">Mansard roof</span></label>
+                      <label class="pcx-check"><input type="checkbox" value="loftConversion"><span class="pcx-checkmark"></span><span class="pcx-check-label">Loft conversion</span></label>
+                      <label class="pcx-check"><input type="checkbox" value="fullInternalRelayout"><span class="pcx-checkmark"></span><span class="pcx-check-label">Full internal relayout</span></label>
+                    </div>
+  
+                    <div class="pcx-form-group" style="margin-top:16px;">
+                      <label class="pcx-check" style="margin:0;">
+                        <input type="checkbox" id="clearInstructionsProvided">
+                        <span class="pcx-checkmark"></span>
+                        <span class="pcx-check-label">Clear instructions provided (apply 10% discount)</span>
+                      </label>
+                    </div>
+  
+                    <div class="pcx-note">
+                      The 10% discount only applies to proposed drawings when instructions are clear enough.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+  
+            <div class="pcx-selector">
+              <h3>Location</h3>
+              <div class="pcx-radio-cards">
+                <label class="pcx-radio-card">
+                  <input type="radio" name="pcx-location" value="homeCounties" checked>
+                  <span>Home Counties</span>
+                </label>
+                <label class="pcx-radio-card">
+                  <input type="radio" name="pcx-location" value="londonNorthEast">
+                  <span>London: North, NW & East (E, EC)</span>
+                </label>
+                <label class="pcx-radio-card">
+                  <input type="radio" name="pcx-location" value="londonSouthWest">
+                  <span>London: South, SE, SW & West (W, WC)</span>
+                </label>
+              </div>
+            </div>
+  
+            <div class="pcx-selector">
+              <h3>Property size (sqm)</h3>
+              <div class="pcx-form-group" data-role="property-sqm-group">
+                <label for="pcxPropertySqm">Enter property size (sqm) <span style="color:#dc2626;">*</span></label>
+                <input type="number" id="pcxPropertySqm" min="10" step="0.01" value="100" placeholder="e.g. 87.5">
+                <span class="pcx-error">Please enter a valid size (minimum 10 sqm). Sizes round to whole sqm before pricing (e.g. 99.5 → 100).</span>
+              </div>
+            </div>
+          </div>
+  
+          <div class="pcx-right">
+            <div class="pcx-summary">
+              <div class="pcx-pill-summary" data-role="selection-pill">Home Counties • 100 sqm</div>
+  
+              <div class="pcx-price">
+                <span class="pcx-price-main" data-role="grand-total-display">£250</span>
+                <span class="pcx-price-label" data-role="estimate-label">Estimate</span>
+              </div>
+  
+              <ul class="pcx-list">
+                <li>Measured survey uses sqm × unit factor × postcode rate, rounded to nearest 10 (minimum £250)</li>
+                <li>Topographical survey uses area tiers with postcode multipliers</li>
+                <li>Existing drawings use base fees and complexity multiplier</li>
+                <li>Proposed drawings use scope-based complexity logic</li>
+                <li>Clear proposed instructions can trigger a 10% discount</li>
+                <li>Form sends full pricing breakdown to your webhook</li>
+              </ul>
+  
+              <div class="pcx-contact">
+                <h4>Your Contact Information</h4>
+  
+                <div class="pcx-service-error" data-role="service-error">
+                  Please select at least one service before submitting.
+                </div>
+  
+                <div class="pcx-form-group" data-role="name-group">
+                  <label for="pcxUserName">Full Name <span style="color:#dc2626;">*</span></label>
+                  <input type="text" id="pcxUserName" placeholder="Enter your full name">
+                  <span class="pcx-error">Please enter your name.</span>
+                </div>
+  
+                <div class="pcx-form-group" data-role="email-group">
+                  <label for="pcxUserEmail">Email Address <span style="color:#dc2626;">*</span></label>
+                  <input type="email" id="pcxUserEmail" placeholder="your.email@example.com">
+                  <span class="pcx-error">Please enter a valid email address.</span>
+                </div>
+
+                <div class="pcx-form-group" data-role="phone-group">
+                  <label for="pcxUserPhone">Phone Number</label>
+                  <input type="text" id="pcxUserPhone" placeholder="Optional phone number">
+                </div>
+
+                <div class="pcx-form-group" data-role="address-group">
+                  <label for="pcxUserAddress">Address <span style="color:#dc2626;">*</span></label>
+                  <input type="text" id="pcxUserAddress" placeholder="Enter property or site address">
+                  <span class="pcx-error">Please enter the address.</span>
+                </div>
+              </div>
+  
+              <button type="submit" class="pcx-submit">Submit Quote Request</button>
+  
+              <div class="pcx-status warning" data-role="request-status">
+                Price on request. One or more complexity-based sections exceed the automatic calculator limits, but the form can still be submitted.
+              </div>
+  
+              <div class="pcx-status success" data-role="calc-status"></div>
+  
+              <div class="pcx-breakdown">
+                <div class="pcx-row" data-role="bd-row-measured"><span class="label">Measured survey</span><span class="value" data-role="bd-measured">£250</span></div>
+                <div class="pcx-row" data-role="bd-row-topo"><span class="label">Topographical survey</span><span class="value" data-role="bd-topo">£0</span></div>
+                <div class="pcx-row" data-role="bd-row-existing"><span class="label">Existing drawings</span><span class="value" data-role="bd-existing-total">£0</span></div>
+                <div class="pcx-row" data-role="bd-row-proposed"><span class="label">Proposed drawings</span><span class="value" data-role="bd-proposed-total">£0</span></div>
+                <div class="pcx-row total"><span class="label">Grand total</span><span class="value" data-role="bd-grand">£250</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+  
+      <div class="pcx-toast" data-role="toast">
+        <div class="pcx-toast-icon">✓</div>
+        <div class="pcx-toast-content">
+          <div class="pcx-toast-title">Success</div>
+          <div class="pcx-toast-message">Your quote request has been submitted successfully.</div>
+        </div>
+        <button class="pcx-toast-close" type="button">×</button>
+      </div>
+    </div>
+  
+    <script>
+      (function () {
+        const root = document.getElementById("pcx-calculator");
+        if (!root) return;
+
+        if (window.pcdPricingBridge) {
+          window.pcdPricingBridge.patchComplexCalculator(root);
+        }
+  
+        const data = {
+          locationRateMultipliers: {
+            londonNorthEast: 1.0,
+            londonSouthWest: 1.25,
+            homeCounties: 1.5
+          },
+          measuredSurveyUnitFactors: {
+            upTo150: 1.5,
+            from151To200: 1.25,
+            over200: 1.1
+          },
+          topographicalSurveyBaseFees: {
+            upTo500: 550,
+            from501To700: 650,
+            from701To900: 700,
+            over900: 900
+          },
+          locationLabels: {
+            homeCounties: "Home Counties",
+            londonNorthEast: "London: North, NW & East (E, EC)",
+            londonSouthWest: "London: South, SE, SW & West (W, WC)"
+          }
+        };
+  
+        const els = {
+          form: root.querySelector(".pcx-form"),
+          toggleMeasured: root.querySelector('[data-role="toggle-measured"]'),
+          toggleTopo: root.querySelector('[data-role="toggle-topo"]'),
+          toggleExisting: root.querySelector('[data-role="toggle-existing"]'),
+          toggleProposed: root.querySelector('[data-role="toggle-proposed"]'),
+          existingSection: root.querySelector('[data-role="existing-section"]'),
+          proposedSection: root.querySelector('[data-role="proposed-section"]'),
+          locationRadios: root.querySelectorAll('input[name="pcx-location"]'),
+          propertySqmGroup: root.querySelector('[data-role="property-sqm-group"]'),
+          propertySqm: root.querySelector("#pcxPropertySqm"),
+          selectionPill: root.querySelector('[data-role="selection-pill"]'),
+          grandTotalDisplay: root.querySelector('[data-role="grand-total-display"]'),
+          estimateLabel: root.querySelector('[data-role="estimate-label"]'),
+          requestStatus: root.querySelector('[data-role="request-status"]'),
+          calcStatus: root.querySelector('[data-role="calc-status"]'),
+          serviceError: root.querySelector('[data-role="service-error"]'),
+          nameGroup: root.querySelector('[data-role="name-group"]'),
+          emailGroup: root.querySelector('[data-role="email-group"]'),
+          phoneGroup: root.querySelector('[data-role="phone-group"]'),
+          addressGroup: root.querySelector('[data-role="address-group"]'),
+          userName: root.querySelector("#pcxUserName"),
+          userEmail: root.querySelector("#pcxUserEmail"),
+          userPhone: root.querySelector("#pcxUserPhone"),
+          userAddress: root.querySelector("#pcxUserAddress"),
+          existingComplexityGroup: root.querySelector('[data-role="existing-complexity-group"]'),
+          proposedScopeGroup: root.querySelector('[data-role="proposed-scope-group"]'),
+          clearInstructions: root.querySelector("#clearInstructionsProvided"),
+          existingRepetitionLevel: root.querySelector("#existingRepetitionLevel"),
+          toast: root.querySelector('[data-role="toast"]'),
+          toastClose: root.querySelector(".pcx-toast-close"),
+          bdMeasured: root.querySelector('[data-role="bd-measured"]'),
+          bdTopo: root.querySelector('[data-role="bd-topo"]'),
+          bdExistingTotal: root.querySelector('[data-role="bd-existing-total"]'),
+          bdProposedTotal: root.querySelector('[data-role="bd-proposed-total"]'),
+          bdGrand: root.querySelector('[data-role="bd-grand"]'),
+          bdRowMeasured: root.querySelector('[data-role="bd-row-measured"]'),
+          bdRowTopo: root.querySelector('[data-role="bd-row-topo"]'),
+          bdRowExisting: root.querySelector('[data-role="bd-row-existing"]'),
+          bdRowProposed: root.querySelector('[data-role="bd-row-proposed"]')
+        };
+  
+        let latestQuote = null;
+  
+        function getCheckedValue(name) {
+          const el = root.querySelector(`input[name="${name}"]:checked`);
+          return el ? el.value : "";
+        }
+  
+        function getNumber(id) {
+          const el = root.querySelector("#" + id);
+          const val = Number(el ? el.value : 0);
+          return Number.isFinite(val) && val >= 0 ? val : 0;
+        }
+  
+        function formatMoney(value, request) {
+          if (request && value === null) return "Price on request";
+          return "£" + Number(value || 0).toFixed(0);
+        }
+  
+        function formatMultiplier(value) {
+          if (value === null || value === undefined) return "Price on request";
+          return Number(value).toFixed(1);
+        }
+  
+        function getSelectedLocation() {
+          return getCheckedValue("pcx-location") || "homeCounties";
+        }
+  
+        function getPropertySqmInputNumber() {
+          const raw = els.propertySqm.value.trim();
+          if (raw === "") return null;
+          const n = Number(raw);
+          return Number.isFinite(n) ? n : null;
+        }
+  
+        function getRoundedPropertySqm() {
+          const n = getPropertySqmInputNumber();
+          if (n === null) return null;
+          return Math.round(n);
+        }
+  
+        function getLocationRateMultiplier(location) {
+          return data.locationRateMultipliers[location] || 1;
+        }
+
+        function getMeasuredUnitFactor(roundedSqm) {
+          if (roundedSqm === null || roundedSqm < 10) return null;
+          if (roundedSqm <= 150) return data.measuredSurveyUnitFactors.upTo150;
+          if (roundedSqm <= 200) return data.measuredSurveyUnitFactors.from151To200;
+          return data.measuredSurveyUnitFactors.over200;
+        }
+
+        function getTopographicalBaseFee(roundedSqm) {
+          if (roundedSqm === null || roundedSqm < 10) return null;
+          if (roundedSqm <= 500) return data.topographicalSurveyBaseFees.upTo500;
+          if (roundedSqm <= 700) return data.topographicalSurveyBaseFees.from501To700;
+          if (roundedSqm <= 900) return data.topographicalSurveyBaseFees.from701To900;
+          return data.topographicalSurveyBaseFees.over900;
+        }
+
+        function roundToNearestTen(value) {
+          return Math.round(value / 10) * 10;
+        }
+  
+        function getSizeM2() {
+          const rounded = getRoundedPropertySqm();
+          return rounded === null ? 0 : rounded;
+        }
+  
+        function getMeasuredSurveyPrice(location, roundedSqm) {
+          if (!els.toggleMeasured.checked) return 0;
+          const unitFactor = getMeasuredUnitFactor(roundedSqm);
+          if (unitFactor === null) return null;
+          const locationRate = getLocationRateMultiplier(location);
+          const base = roundedSqm * unitFactor * locationRate;
+          return Math.max(250, roundToNearestTen(base));
+        }
+  
+        function getTopographicalSurveyPrice(location, roundedSqm) {
+          if (!els.toggleTopo.checked) return 0;
+          const baseFee = getTopographicalBaseFee(roundedSqm);
+          if (baseFee === null) return null;
+          const locationRate = getLocationRateMultiplier(location);
+          return baseFee * locationRate;
+        }
+  
+        function getExistingComplexityFlags() {
+          const flags = {
+            bayWindows: false,
+            multipleExtensionDepths: false,
+            decorativeFeatures: false,
+            over3Floors: false,
+            highDetailVariation: false,
+            manyMaterialChanges: false,
+            manySocketsOrServices: false,
+            loftConversion: false,
+            internalLevelChanges: false,
+            splitLevels: false,
+            curvedWallsMultiple: false,
+            angledWallsMultiple: false,
+            roofPitchTypesOver2: false,
+            irregularLayout: false,
+            rearExtension: false,
+            sideExtension: false,
+            dormerWindows: false,
+            differentFacades: false,
+            complicatedSectionRequired: false,
+            complicatedRoofOrDifferentRoofType: false,
+            detailedInternalElevations: false
+          };
+  
+          els.existingComplexityGroup.querySelectorAll('input[type="checkbox"]:checked').forEach(input => {
+            flags[input.value] = true;
+          });
+  
+          return flags;
+        }
+  
+        function getExistingComplexityCount(flags) {
+          return Object.values(flags).filter(Boolean).length;
+        }
+  
+        function getExistingComplexityLevel(count, repetitionLevel) {
+          if (count <= 2) return "none";
+          if (count <= 5) return repetitionLevel === "heavy" ? "medium" : "low";
+          if (count <= 8) return repetitionLevel === "heavy" ? "high" : "medium";
+          return "high";
+        }
+  
+        function getComplexityMultiplier(level) {
+          const map = { none: 1.0, low: 1.2, medium: 1.4, high: 1.6 };
+          return map[level] || 1.0;
+        }
+  
+        function getExistingDrawingsInput() {
+          return {
+            floorPlans: getNumber("existingFloorPlans"),
+            elevations: getNumber("existingElevations"),
+            sections: getNumber("existingSections"),
+            roofPlans: getNumber("existingRoofPlans"),
+            topographicalPlans: getNumber("existingTopographicalPlans"),
+            interiorElevations: getNumber("existingInteriorElevations"),
+            basicSitePlans: getNumber("existingBasicSitePlans")
+          };
+        }
+  
+        function calculateExistingBaseFees(drawings) {
+          if (window.pcdPricingBridge) {
+            return window.pcdPricingBridge.calculateExistingBaseFees(drawings);
+          }
+          return (
+            (drawings.floorPlans || 0) * 40 +
+            (drawings.elevations || 0) * 40 +
+            (drawings.sections || 0) * 40 +
+            (drawings.roofPlans || 0) * 40 +
+            (drawings.topographicalPlans || 0) * 40 +
+            (drawings.interiorElevations || 0) * 20 +
+            (drawings.basicSitePlans || 0) * 100
+          );
+        }
+  
+        function getExistingSizeMultiplier(sizeM2) {
+          return 1.0;
+        }
+  
+        function calculateExistingDrawingFee(input) {
+          const baseFees = calculateExistingBaseFees(input.drawings);
+          const complexityCount = getExistingComplexityCount(input.complexityFlags);
+          const complexityLevel = getExistingComplexityLevel(complexityCount, input.repetitionLevel);
+          const complexityMultiplier = getComplexityMultiplier(complexityLevel);
+          const sizeMultiplier = getExistingSizeMultiplier(input.sizeM2);
+  
+          if (sizeMultiplier === null) {
+            return {
+              askForQuote: true,
+              baseFees: baseFees,
+              complexityCount: complexityCount,
+              complexityLevel: complexityLevel,
+              complexityMultiplier: complexityMultiplier,
+              sizeMultiplier: null,
+              total: null
+            };
+          }
+  
+          return {
+            askForQuote: false,
+            baseFees: baseFees,
+            complexityCount: complexityCount,
+            complexityLevel: complexityLevel,
+            complexityMultiplier: complexityMultiplier,
+            sizeMultiplier: sizeMultiplier,
+            total: baseFees * complexityMultiplier * sizeMultiplier
+          };
+        }
+  
+        function getProposedScopeFlags() {
+          const flags = {
+            noPhysicalDesignChange: false,
+            annotationChangesOnly: false,
+            roomNameChangesOnly: false,
+            minorMaterialChanges: false,
+            minorInternalWallsOnly: false,
+            internalWallsAddedOrRemoved: false,
+            simpleWindowDoorAdditions: false,
+            someSitePlanChanges: false,
+            simpleExtension: false,
+            manyInternalChanges: false,
+            newBuild: false,
+            extension: false,
+            newStairs: false,
+            mansardRoof: false,
+            loftConversion: false,
+            fullInternalRelayout: false
+          };
+  
+          els.proposedScopeGroup.querySelectorAll('input[type="checkbox"]:checked').forEach(input => {
+            flags[input.value] = true;
+          });
+  
+          return flags;
+        }
+  
+        function getProposedDrawingsAffectedInput() {
+          return {
+            floorPlansAffected: getNumber("proposedFloorPlansAffected"),
+            elevationsAffected: getNumber("proposedElevationsAffected"),
+            sectionsAffected: getNumber("proposedSectionsAffected"),
+            roofPlansAffected: getNumber("proposedRoofPlansAffected"),
+            basicSitePlansAffected: getNumber("proposedBasicSitePlansAffected"),
+            topographicalPlansAffected: getNumber("proposedTopographicalPlansAffected"),
+            interiorElevationsAffected: getNumber("proposedInteriorElevationsAffected"),
+            basicLocationPlansAffected: getNumber("proposedBasicLocationPlansAffected")
+          };
+        }
+  
+        function getProposedComplexityLevel(scope) {
+          if (
+            scope.newBuild ||
+            scope.extension ||
+            scope.newStairs ||
+            scope.mansardRoof ||
+            scope.loftConversion ||
+            scope.fullInternalRelayout
+          ) return "high";
+  
+          if (
+            scope.simpleExtension ||
+            scope.manyInternalChanges
+          ) return "medium";
+  
+          if (
+            scope.internalWallsAddedOrRemoved ||
+            scope.simpleWindowDoorAdditions ||
+            scope.someSitePlanChanges
+          ) return "low";
+  
+          if (
+            scope.noPhysicalDesignChange ||
+            scope.annotationChangesOnly ||
+            scope.roomNameChangesOnly ||
+            scope.minorMaterialChanges ||
+            scope.minorInternalWallsOnly
+          ) return "none";
+  
+          return "low";
+        }
+  
+        function calculateProposedBaseFees(drawingsAffected) {
+          if (window.pcdPricingBridge) {
+            return window.pcdPricingBridge.calculateProposedBaseFees(drawingsAffected);
+          }
+          return (
+            (drawingsAffected.floorPlansAffected || 0) * 30 +
+            (drawingsAffected.elevationsAffected || 0) * 30 +
+            (drawingsAffected.sectionsAffected || 0) * 30 +
+            (drawingsAffected.roofPlansAffected || 0) * 30 +
+            (drawingsAffected.basicSitePlansAffected || 0) * 30 +
+            (drawingsAffected.topographicalPlansAffected || 0) * 30 +
+            (drawingsAffected.interiorElevationsAffected || 0) * 10 +
+            (drawingsAffected.basicLocationPlansAffected || 0) * 20
+          );
+        }
+  
+        function getProposedSizeMultiplier(sizeM2, isNewBuild) {
+          return 1.0;
+        }
+  
+        function applyInstructionClarityDiscount(total, hasClearInstructions) {
+          if (!hasClearInstructions) return { discount: 0, finalTotal: total };
+          const discount = total * 0.1;
+          return { discount: discount, finalTotal: total - discount };
+        }
+  
+        function calculateProposedDrawingFee(input) {
+          const baseFees = calculateProposedBaseFees(input.drawingsAffected);
+          const complexityLevel = getProposedComplexityLevel(input.scope);
+          const complexityMultiplier = getComplexityMultiplier(complexityLevel);
+          const sizeMultiplier = getProposedSizeMultiplier(input.sizeM2, !!input.scope.newBuild);
+  
+          if (sizeMultiplier === null) {
+            return {
+              askForQuote: true,
+              baseFees: baseFees,
+              complexityLevel: complexityLevel,
+              complexityMultiplier: complexityMultiplier,
+              sizeMultiplier: null,
+              subtotal: null,
+              discount: 0,
+              total: null
+            };
+          }
+  
+          const subtotal = baseFees * complexityMultiplier * sizeMultiplier;
+          const clarity = applyInstructionClarityDiscount(subtotal, input.hasClearInstructions);
+  
+          return {
+            askForQuote: false,
+            baseFees: baseFees,
+            complexityLevel: complexityLevel,
+            complexityMultiplier: complexityMultiplier,
+            sizeMultiplier: sizeMultiplier,
+            subtotal: subtotal,
+            discount: clarity.discount,
+            total: clarity.finalTotal
+          };
+        }
+  
+        function getComplexityLabel(level) {
+          const map = { none: "None", low: "Low", medium: "Medium", high: "High" };
+          return map[level] || "None";
+        }
+  
+        function refreshVisibility() {
+          els.existingSection.classList.toggle("active", els.toggleExisting.checked);
+          els.proposedSection.classList.toggle("active", els.toggleProposed.checked);
+        }
+  
+        function updatePrice() {
+          refreshVisibility();
+  
+          const location = getSelectedLocation();
+          const roundedSqm = getRoundedPropertySqm();
+          const sizeM2 = getSizeM2();
+          const locationLabel = data.locationLabels[location] || location;
+          let pillSize = "Enter size (sqm)";
+          if (roundedSqm !== null) {
+            pillSize = roundedSqm + " sqm";
+          }
+  
+          els.selectionPill.textContent = locationLabel + " • " + pillSize;
+  
+          const measuredSurveyTotal = getMeasuredSurveyPrice(location, roundedSqm);
+          const topographicalSurveyTotal = getTopographicalSurveyPrice(location, roundedSqm);
+  
+          let existingResult = {
+            askForQuote: false,
+            baseFees: 0,
+            complexityCount: 0,
+            complexityLevel: "none",
+            complexityMultiplier: 1,
+            sizeMultiplier: 1,
+            total: 0
+          };
+  
+          if (els.toggleExisting.checked) {
+            existingResult = calculateExistingDrawingFee({
+              sizeM2: sizeM2,
+              drawings: getExistingDrawingsInput(),
+              complexityFlags: getExistingComplexityFlags(),
+              repetitionLevel: els.existingRepetitionLevel.value
+            });
+          }
+  
+          let proposedResult = {
+            askForQuote: false,
+            baseFees: 0,
+            complexityLevel: "none",
+            complexityMultiplier: 1,
+            sizeMultiplier: 1,
+            subtotal: 0,
+            discount: 0,
+            total: 0
+          };
+  
+          if (els.toggleProposed.checked) {
+            proposedResult = calculateProposedDrawingFee({
+              sizeM2: sizeM2,
+              drawingsAffected: getProposedDrawingsAffectedInput(),
+              scope: getProposedScopeFlags(),
+              hasClearInstructions: els.clearInstructions.checked
+            });
+          }
+  
+          const anyQuoteOnRequest =
+            measuredSurveyTotal === null ||
+            topographicalSurveyTotal === null ||
+            existingResult.askForQuote ||
+            proposedResult.askForQuote;
+  
+          const grandTotal =
+            (measuredSurveyTotal || 0) +
+            (topographicalSurveyTotal || 0) +
+            (existingResult.total || 0) +
+            (proposedResult.total || 0);
+  
+          latestQuote = {
+            meta: {
+              location: location,
+              locationLabel: locationLabel,
+              sizeM2Input: getPropertySqmInputNumber(),
+              sizeM2: roundedSqm,
+              measuredUnitFactor: getMeasuredUnitFactor(roundedSqm),
+              topographicalBaseFee: getTopographicalBaseFee(roundedSqm),
+              sizeBand: null,
+              anyQuoteOnRequest: anyQuoteOnRequest
+            },
+            measuredSurvey: {
+              selected: els.toggleMeasured.checked,
+              total: measuredSurveyTotal
+            },
+            topographicalSurvey: {
+              selected: els.toggleTopo.checked,
+              total: topographicalSurveyTotal
+            },
+            existingDrawings: {
+              selected: els.toggleExisting.checked,
+              drawings: getExistingDrawingsInput(),
+              complexityFlags: getExistingComplexityFlags(),
+              repetitionLevel: els.existingRepetitionLevel.value,
+              result: existingResult
+            },
+            proposedDrawings: {
+              selected: els.toggleProposed.checked,
+              drawingsAffected: getProposedDrawingsAffectedInput(),
+              scope: getProposedScopeFlags(),
+              hasClearInstructions: els.clearInstructions.checked,
+              result: proposedResult
+            },
+            totals: {
+              grandTotal: grandTotal
+            }
+          };
+  
+          renderQuote(latestQuote);
+        }
+  
+        function renderQuote(quote) {
+          const measured = quote.measuredSurvey.total;
+          const topo = quote.topographicalSurvey.total;
+          const existing = quote.existingDrawings.result;
+          const proposed = quote.proposedDrawings.result;
+          const grandTotal = quote.totals.grandTotal;
+          const anyQuoteOnRequest = quote.meta.anyQuoteOnRequest;
+  
+          els.grandTotalDisplay.textContent = anyQuoteOnRequest ? "Price on request" : formatMoney(grandTotal);
+          els.estimateLabel.textContent = anyQuoteOnRequest ? "Manual quote" : "Estimate";
+  
+          els.bdMeasured.textContent = formatMoney(measured, true);
+          els.bdTopo.textContent = formatMoney(topo, true);
+          els.bdExistingTotal.textContent = formatMoney(existing.total, true);
+          els.bdProposedTotal.textContent = formatMoney(proposed.total, true);
+          els.bdGrand.textContent = anyQuoteOnRequest ? "Price on request" : formatMoney(grandTotal);
+
+          if (els.bdRowMeasured) {
+            els.bdRowMeasured.style.display = quote.measuredSurvey.selected ? "" : "none";
+          }
+          if (els.bdRowTopo) {
+            els.bdRowTopo.style.display = quote.topographicalSurvey.selected ? "" : "none";
+          }
+          if (els.bdRowExisting) {
+            els.bdRowExisting.style.display = quote.existingDrawings.selected ? "" : "none";
+          }
+          if (els.bdRowProposed) {
+            els.bdRowProposed.style.display = quote.proposedDrawings.selected ? "" : "none";
+          }
+
+          els.requestStatus.classList.toggle("show", anyQuoteOnRequest);
+          els.calcStatus.textContent = "";
+          els.calcStatus.classList.remove("show");
+        }
+  
+        function validate() {
+          let ok = true;
+  
+          const anyServiceSelected =
+            els.toggleMeasured.checked ||
+            els.toggleTopo.checked ||
+            els.toggleExisting.checked ||
+            els.toggleProposed.checked;
+  
+          els.serviceError.classList.toggle("show", !anyServiceSelected);
+          if (!anyServiceSelected) ok = false;
+  
+          if (!els.userName.value.trim()) {
+            els.nameGroup.classList.add("error");
+            ok = false;
+          } else {
+            els.nameGroup.classList.remove("error");
+          }
+  
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!els.userEmail.value.trim() || !emailRegex.test(els.userEmail.value.trim())) {
+            els.emailGroup.classList.add("error");
+            ok = false;
+          } else {
+            els.emailGroup.classList.remove("error");
+          }
+
+          if (!els.userAddress.value.trim()) {
+            els.addressGroup.classList.add("error");
+            ok = false;
+          } else {
+            els.addressGroup.classList.remove("error");
+          }
+  
+          const rawSqm = els.propertySqm.value.trim();
+          const numSqm = rawSqm === "" ? null : Number(rawSqm);
+          const roundedSqm = numSqm !== null && Number.isFinite(numSqm) ? Math.round(numSqm) : null;
+          if (rawSqm === "" || roundedSqm === null || !Number.isFinite(numSqm) || roundedSqm < 10) {
+            els.propertySqmGroup.classList.add("error");
+            ok = false;
+          } else {
+            els.propertySqmGroup.classList.remove("error");
+          }
+  
+          return ok;
+        }
+  
+        function buildPayload() {
+          const existingResult = latestQuote.existingDrawings.result || {};
+          const proposedResult = latestQuote.proposedDrawings.result || {};
+          return {
+            calculatorMode: "complex",
+            contact: {
+              name: els.userName.value.trim(),
+              email: els.userEmail.value.trim(),
+              phone: els.userPhone.value.trim(),
+              address: els.userAddress.value.trim()
+            },
+            meta: {
+              calculatorMode: "complex",
+              submittedAt: new Date().toISOString(),
+              quoteOnRequest: !!latestQuote.meta.anyQuoteOnRequest,
+              location: latestQuote.meta.location,
+              locationLabel: latestQuote.meta.locationLabel,
+              sizeBand: latestQuote.meta.sizeBand,
+              measuredUnitFactor: latestQuote.meta.measuredUnitFactor,
+              topographicalBaseFee: latestQuote.meta.topographicalBaseFee,
+              sizeM2: latestQuote.meta.sizeM2,
+              sizeM2Input: latestQuote.meta.sizeM2Input
+            },
+            services: {
+              measuredSurvey: latestQuote.measuredSurvey,
+              topographicalSurvey: latestQuote.topographicalSurvey,
+              existingDrawings: latestQuote.existingDrawings,
+              proposedDrawings: latestQuote.proposedDrawings
+            },
+            totals: latestQuote.totals,
+            pricing: {
+              measuredSurvey: latestQuote.measuredSurvey.total,
+              topographicalSurvey: latestQuote.topographicalSurvey.total,
+              existingDrawings: existingResult.total != null ? existingResult.total : null,
+              proposedDrawings: proposedResult.total != null ? proposedResult.total : null,
+              grandTotal: latestQuote.totals.grandTotal
+            },
+            quote: latestQuote
+          };
+        }
+  
+        function showToast(title, message, type) {
+          const titleEl = els.toast.querySelector(".pcx-toast-title");
+          const msgEl = els.toast.querySelector(".pcx-toast-message");
+  
+          titleEl.textContent = title;
+          msgEl.textContent = message;
+          els.toast.style.backgroundColor = type === "error" ? "#ef4444" : "#10b981";
+          els.toast.classList.remove("hide");
+          els.toast.classList.add("show");
+  
+          clearTimeout(els.toast._t);
+          els.toast._t = setTimeout(closeToast, 5000);
+        }
+  
+        function closeToast() {
+          els.toast.classList.remove("show");
+          els.toast.classList.add("hide");
+          clearTimeout(els.toast._reset);
+          els.toast._reset = setTimeout(function () {
+            els.toast.classList.remove("hide");
+          }, 350);
+        }
+  
+        function resetForm() {
+          els.form.reset();
+          els.toggleMeasured.checked = true;
+          els.toggleTopo.checked = false;
+          els.toggleExisting.checked = false;
+          els.toggleProposed.checked = false;
+  
+          root.querySelector("#existingFloorPlans").value = 1;
+          root.querySelector("#existingElevations").value = 0;
+          root.querySelector("#existingSections").value = 0;
+          root.querySelector("#existingRoofPlans").value = 0;
+          root.querySelector("#existingTopographicalPlans").value = 0;
+          root.querySelector("#existingInteriorElevations").value = 0;
+          root.querySelector("#existingBasicSitePlans").value = 0;
+  
+          root.querySelector("#proposedFloorPlansAffected").value = 1;
+          root.querySelector("#proposedElevationsAffected").value = 0;
+          root.querySelector("#proposedSectionsAffected").value = 0;
+          root.querySelector("#proposedRoofPlansAffected").value = 0;
+          root.querySelector("#proposedBasicSitePlansAffected").value = 0;
+          root.querySelector("#proposedTopographicalPlansAffected").value = 0;
+          root.querySelector("#proposedInteriorElevationsAffected").value = 0;
+          root.querySelector("#proposedBasicLocationPlansAffected").value = 0;
+  
+          els.existingRepetitionLevel.value = "none";
+          els.nameGroup.classList.remove("error");
+          els.emailGroup.classList.remove("error");
+          els.addressGroup.classList.remove("error");
+          els.propertySqmGroup.classList.remove("error");
+          els.propertySqm.value = 100;
+          els.serviceError.classList.remove("show");
+  
+          updatePrice();
+        }
+  
+        root.querySelectorAll('[data-step-target]').forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            const target = root.querySelector("#" + btn.getAttribute("data-step-target"));
+            if (!target) return;
+            const min = Number(target.min || 0);
+            const next = Math.max(min, Number(target.value || 0) + Number(btn.getAttribute("data-step") || 0));
+            target.value = next;
+            updatePrice();
+          });
+        });
+  
+        root.querySelectorAll('input[type="number"]:not(#pcxPropertySqm)').forEach(function (input) {
+          input.addEventListener("input", function () {
+            const min = Number(input.min || 0);
+            let val = Number(input.value);
+            if (!Number.isFinite(val) || val < min) val = min;
+            input.value = val;
+            updatePrice();
+          });
+        });
+  
+        [els.toggleMeasured, els.toggleTopo, els.toggleExisting, els.toggleProposed].forEach(function (el) {
+          el.addEventListener("change", updatePrice);
+        });
+  
+        els.locationRadios.forEach(function (el) {
+          el.addEventListener("change", updatePrice);
+        });
+  
+        els.propertySqm.addEventListener("input", function () {
+          els.propertySqmGroup.classList.remove("error");
+          updatePrice();
+        });
+  
+        els.existingComplexityGroup.querySelectorAll('input[type="checkbox"]').forEach(function (el) {
+          el.addEventListener("change", updatePrice);
+        });
+  
+        els.proposedScopeGroup.querySelectorAll('input[type="checkbox"]').forEach(function (el) {
+          el.addEventListener("change", updatePrice);
+        });
+  
+        els.clearInstructions.addEventListener("change", updatePrice);
+        els.existingRepetitionLevel.addEventListener("change", updatePrice);
+  
+        els.userName.addEventListener("input", function () {
+          els.nameGroup.classList.remove("error");
+        });
+  
+        els.userEmail.addEventListener("input", function () {
+          els.emailGroup.classList.remove("error");
+        });
+
+        els.userAddress.addEventListener("input", function () {
+          els.addressGroup.classList.remove("error");
+        });
+  
+        els.form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          updatePrice();
+  
+          if (!validate()) {
+            const firstError =
+              root.querySelector(".pcx-form-group.error") ||
+              root.querySelector(".pcx-service-error.show");
+  
+            if (firstError && typeof firstError.scrollIntoView === "function") {
+              firstError.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+            return;
+          }
+  
+          const payload = buildPayload();
+          console.log("PCX Quote Payload:", payload);
+  
+          pcdSubmitQuote(payload)
+            .then(function () {
+              showToast("Success!", "Your quote request has been submitted successfully. We'll contact you soon!", "success");
+              resetForm();
+            })
+            .catch(function (error) {
+              console.error("Submit error:", error);
+              showToast("Error!", "There was an issue submitting your request. Please try again or contact us directly.", "error");
+            });
+        });
+  
+        els.toastClose.addEventListener("click", closeToast);
+  
+        updatePrice();
+      })();
+    </script>
+  </div>
+    </div>
+
+    <script>
+      (function () {
+        const app = document.getElementById("pcx-app");
+        if (!app) return;
+
+        const simplePanel = document.getElementById("pcx-mode-simple");
+        const complexPanel = document.getElementById("pcx-mode-complex");
+        const modeToggle = app.querySelector(".pcx-mode-toggle");
+        const modeButtons = app.querySelectorAll("[data-pcx-mode]");
+
+        function setCalculatorMode(mode) {
+          const isSimple = mode === "simple";
+          simplePanel.classList.toggle("pcx-hidden", !isSimple);
+          complexPanel.classList.toggle("pcx-hidden", isSimple);
+          simplePanel.setAttribute("aria-hidden", isSimple ? "false" : "true");
+          complexPanel.setAttribute("aria-hidden", isSimple ? "true" : "false");
+
+          if (modeToggle) {
+            modeToggle.setAttribute("data-active", mode);
+          }
+
+          modeButtons.forEach(function (btn) {
+            const isActive = btn.getAttribute("data-pcx-mode") === mode;
+            btn.classList.toggle("active", isActive);
+            btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+          });
+        }
+
+        modeButtons.forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            setCalculatorMode(btn.getAttribute("data-pcx-mode"));
+          });
+        });
+
+        setCalculatorMode("simple");
+      })();
+    </script>
+  </div>
