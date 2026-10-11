@@ -20,6 +20,74 @@
           });
         });
       }
+
+      function pcxFormatMoney(amount) {
+        if (amount === null || amount === undefined || amount === '') return '—';
+        var n = Number(amount);
+        if (!Number.isFinite(n)) return '—';
+        return '£' + (Number.isInteger(n) ? n : n.toFixed(2));
+      }
+
+      function pcxShowQuotePricePopup(options) {
+        options = options || {};
+        var modal = document.getElementById('pcx-quote-price-modal');
+        if (!modal) return;
+
+        var totalEl = modal.querySelector('[data-role="quote-price-total"]');
+        var labelEl = modal.querySelector('[data-role="quote-price-label"]');
+        var listEl = modal.querySelector('[data-role="quote-price-breakdown"]');
+        var msgEl = modal.querySelector('[data-role="quote-price-message"]');
+
+        var quoteOnRequest = !!options.quoteOnRequest;
+        if (totalEl) {
+          totalEl.textContent = quoteOnRequest ? 'Price on request' : pcxFormatMoney(options.total);
+        }
+        if (labelEl) {
+          labelEl.textContent = quoteOnRequest ? 'Manual quote required' : 'Your estimated total';
+        }
+        if (msgEl) {
+          msgEl.textContent = options.message || "Your quote request has been submitted successfully. We'll contact you soon!";
+        }
+        if (listEl) {
+          listEl.innerHTML = '';
+          var lines = Array.isArray(options.lines) ? options.lines : [];
+          lines.forEach(function (line) {
+            if (!line || !line.label) return;
+            var row = document.createElement('div');
+            row.className = 'pcx-quote-price-row';
+            var lab = document.createElement('span');
+            lab.textContent = line.label;
+            var val = document.createElement('span');
+            val.textContent = line.value;
+            row.appendChild(lab);
+            row.appendChild(val);
+            listEl.appendChild(row);
+          });
+          listEl.style.display = lines.length ? '' : 'none';
+        }
+
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function pcxCloseQuotePricePopup() {
+        var modal = document.getElementById('pcx-quote-price-modal');
+        if (!modal) return;
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+      }
+
+      document.addEventListener('click', function (e) {
+        var modal = document.getElementById('pcx-quote-price-modal');
+        if (!modal || !modal.classList.contains('is-open')) return;
+        if (e.target === modal) pcxCloseQuotePricePopup();
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') pcxCloseQuotePricePopup();
+      });
     </script>
     <style>
       .pcx-app {
@@ -33,6 +101,121 @@
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
         background: var(--bg);
         color: var(--text);
+      }
+
+      .pcx-quote-price-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 100000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgba(15, 23, 42, 0.55);
+      }
+
+      .pcx-quote-price-modal.is-open {
+        display: flex;
+      }
+
+      .pcx-quote-price-dialog {
+        width: 100%;
+        max-width: 420px;
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+        padding: 28px 24px 22px;
+        text-align: center;
+        position: relative;
+        animation: pcxQuotePopIn 0.28s ease;
+      }
+
+      @keyframes pcxQuotePopIn {
+        from { opacity: 0; transform: translateY(12px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      .pcx-quote-price-close {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        border: 0;
+        background: transparent;
+        font-size: 1.5rem;
+        line-height: 1;
+        color: #64748b;
+        cursor: pointer;
+      }
+
+      .pcx-quote-price-eyebrow {
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--primary);
+        margin-bottom: 8px;
+      }
+
+      .pcx-quote-price-total {
+        font-size: 2.4rem;
+        font-weight: 700;
+        color: var(--text);
+        line-height: 1.1;
+        margin: 0 0 6px;
+      }
+
+      .pcx-quote-price-label {
+        font-size: 0.95rem;
+        color: var(--muted);
+        margin-bottom: 16px;
+      }
+
+      .pcx-quote-price-breakdown {
+        text-align: left;
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        padding: 12px 0;
+        margin-bottom: 16px;
+      }
+
+      .pcx-quote-price-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 0.9rem;
+        padding: 6px 0;
+        color: var(--text);
+      }
+
+      .pcx-quote-price-row span:last-child {
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .pcx-quote-price-message {
+        font-size: 0.92rem;
+        color: var(--muted);
+        margin: 0 0 18px;
+        line-height: 1.45;
+      }
+
+      .pcx-quote-price-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 140px;
+        padding: 12px 20px;
+        border: 0;
+        border-radius: 10px;
+        background: var(--primary);
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+      }
+
+      .pcx-quote-price-btn:hover {
+        background: var(--primary-dark);
       }
 
       .pcx-app .pcx-mode-bar-wrap {
@@ -162,6 +345,18 @@
         }
       }
     </style>
+
+    <div id="pcx-quote-price-modal" class="pcx-quote-price-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="pcx-quote-price-title">
+      <div class="pcx-quote-price-dialog">
+        <button type="button" class="pcx-quote-price-close" aria-label="Close" onclick="pcxCloseQuotePricePopup()">&times;</button>
+        <div class="pcx-quote-price-eyebrow" id="pcx-quote-price-title">Quote submitted</div>
+        <div class="pcx-quote-price-total" data-role="quote-price-total">£0</div>
+        <div class="pcx-quote-price-label" data-role="quote-price-label">Your estimated total</div>
+        <div class="pcx-quote-price-breakdown" data-role="quote-price-breakdown"></div>
+        <p class="pcx-quote-price-message" data-role="quote-price-message">Your quote request has been submitted successfully. We'll contact you soon!</p>
+        <button type="button" class="pcx-quote-price-btn" onclick="pcxCloseQuotePricePopup()">Done</button>
+      </div>
+    </div>
 
     <div class="pcx-mode-bar-wrap">
       <div class="pcx-mode-bar">
@@ -574,6 +769,14 @@
           }
     
           .pricing-calculator .price-display {
+            display: none !important;
+          }
+
+          .pricing-calculator .price-breakdown {
+            display: none !important;
+          }
+
+          .pricing-calculator .price-display-legacy {
             font-size: 3rem !important;
             font-weight: 700 !important;
             margin-bottom: 1.5rem !important;
@@ -843,6 +1046,62 @@
             color: var(--text) !important;
           }
 
+          .pricing-calculator .discount-request-option {
+            display: flex !important;
+            align-items: flex-start !important;
+            gap: 0.65rem !important;
+            margin: 0.25rem 0 0.5rem !important;
+            cursor: pointer !important;
+            user-select: none !important;
+          }
+
+          .pricing-calculator .discount-request-option input {
+            position: absolute !important;
+            opacity: 0 !important;
+            width: 0 !important;
+            height: 0 !important;
+          }
+
+          .pricing-calculator .discount-request-box {
+            width: 18px !important;
+            height: 18px !important;
+            margin-top: 2px !important;
+            flex-shrink: 0 !important;
+            border: 2px solid #94a3b8 !important;
+            border-radius: 4px !important;
+            background: #fff !important;
+            position: relative !important;
+          }
+
+          .pricing-calculator .discount-request-option input:checked + .discount-request-box {
+            background: var(--primary) !important;
+            border-color: var(--primary) !important;
+          }
+
+          .pricing-calculator .discount-request-option input:checked + .discount-request-box::after {
+            content: "" !important;
+            position: absolute !important;
+            left: 5px !important;
+            top: 1px !important;
+            width: 4px !important;
+            height: 9px !important;
+            border: solid #fff !important;
+            border-width: 0 2px 2px 0 !important;
+            transform: rotate(45deg) !important;
+          }
+
+          .pricing-calculator .discount-request-text {
+            font-size: 0.92rem !important;
+            font-weight: 500 !important;
+            color: var(--text) !important;
+            line-height: 1.35 !important;
+          }
+
+          .pricing-calculator .discount-optional {
+            color: var(--muted) !important;
+            font-weight: 400 !important;
+          }
+
           .pricing-calculator .form-group {
             margin-bottom: 1rem !important;
           }
@@ -1072,7 +1331,7 @@
                       <div class="service-icon">🏢</div>
                       <div class="service-text">
                         <h4>Floor Plans</h4>
-                        <p>Per-Floor Fee: <span id="unitPriceDisplay">£35</span></p>
+                        <p>Per-Floor Fee</p>
                       </div>
                     </div>
                     <div class="quantity-selector">
@@ -1089,7 +1348,7 @@
                       <div class="service-icon">🏛️</div>
                       <div class="service-text">
                         <h4>Elevations</h4>
-                        <p>Per-Elevation Fee: <span id="elevationsUnitPriceDisplay">£35</span></p>
+                        <p>Per-Elevation Fee</p>
                       </div>
                     </div>
                     <div class="quantity-selector">
@@ -1106,7 +1365,7 @@
                       <div class="service-icon">✂️</div>
                       <div class="service-text">
                         <h4>Sections</h4>
-                        <p>Per-Section Fee: <span id="sectionsUnitPriceDisplay">£35</span></p>
+                        <p>Per-Section Fee</p>
                       </div>
                     </div>
                     <div class="quantity-selector">
@@ -1138,61 +1397,61 @@
                       <label class="checkbox-item">
                         <input type="checkbox" id="rearExtension" name="proposedTypes[]" value="rearExtension">
                         <span class="checkmark"></span>
-                        <span class="checkbox-label">Rear Extension (£100)</span>
+                        <span class="checkbox-label">Rear Extension</span>
                       </label>
                 
                       <label class="checkbox-item">
                         <input type="checkbox" id="sideExtension" name="proposedTypes[]" value="sideExtension">
                         <span class="checkmark"></span>
-                        <span class="checkbox-label">Side Extension (£100)</span>
+                        <span class="checkbox-label">Side Extension</span>
                       </label>
                 
                       <label class="checkbox-item">
                         <input type="checkbox" id="frontExtension" name="proposedTypes[]" value="frontExtension">
                         <span class="checkmark"></span>
-                        <span class="checkbox-label">Front Extension (£100)</span>
+                        <span class="checkbox-label">Front Extension</span>
                       </label>
                 
                       <label class="checkbox-item">
                         <input type="checkbox" id="gardenExtension" name="proposedTypes[]" value="gardenExtension">
                         <span class="checkmark"></span>
-                        <span class="checkbox-label">Garden Extension (£100)</span>
+                        <span class="checkbox-label">Garden Extension</span>
                       </label>
                 
                       <label class="checkbox-item">
                         <input type="checkbox" id="garageConversion" name="proposedTypes[]" value="garageConversion">
                         <span class="checkmark"></span>
-                        <span class="checkbox-label">Garage Conversion (£100)</span>
+                        <span class="checkbox-label">Garage Conversion</span>
                       </label>
                 
                       <label class="checkbox-item">
                         <input type="checkbox" id="loftConversion" name="proposedTypes[]" value="loftConversion">
                         <span class="checkmark"></span>
-                        <span class="checkbox-label">Loft Conversion (£100)</span>
+                        <span class="checkbox-label">Loft Conversion</span>
                       </label>
                 
                       <label class="checkbox-item">
                         <input type="checkbox" id="dormerExtension" name="proposedTypes[]" value="dormerExtension">
                         <span class="checkmark"></span>
-                        <span class="checkbox-label">Dormer Extension (£100)</span>
+                        <span class="checkbox-label">Dormer Extension</span>
                       </label>
                 
                       <label class="checkbox-item">
                         <input type="checkbox" id="singleStoreyDormers" name="proposedTypes[]" value="singleStoreyDormers">
                         <span class="checkmark"></span>
-                        <span class="checkbox-label">Single Storey Dormer (£100)</span>
+                        <span class="checkbox-label">Single Storey Dormer</span>
                       </label>
                 
                       <label class="checkbox-item">
                         <input type="checkbox" id="doubleStoreyDormers" name="proposedTypes[]" value="doubleStoreyDormers">
                         <span class="checkmark"></span>
-                        <span class="checkbox-label">Double Storey Dormers (£160)</span>
+                        <span class="checkbox-label">Double Storey Dormers</span>
                       </label>
                 
                       <label class="checkbox-item">
                         <input type="checkbox" id="others" name="proposedTypes[]" value="others">
                         <span class="checkmark"></span>
-                        <span class="checkbox-label">Others (£80)</span>
+                        <span class="checkbox-label">Others</span>
                       </label>
                     </div>
                   </div>
@@ -1272,6 +1531,11 @@
                     <input type="text" id="userAddress" name="userAddress" placeholder="Enter property or site address">
                     <span class="error-message">Please enter the address</span>
                   </div>
+                  <label class="discount-request-option" for="requestForDiscount">
+                    <input type="checkbox" id="requestForDiscount" name="requestForDiscount" value="1">
+                    <span class="discount-request-box" aria-hidden="true"></span>
+                    <span class="discount-request-text">Request For Discount <span class="discount-optional">(optional)</span></span>
+                  </label>
                   <div class="pcd-hp" aria-hidden="true">
                     <label for="pcdHpWebsite">Website</label>
                     <input type="text" id="pcdHpWebsite" name="website" tabindex="-1" autocomplete="off" value="">
@@ -1742,8 +2006,12 @@
                   }
               }
     
-              const basePrice = getMeasuredSurveyPrice(selectedLocation, roundedSqm);
-              const planningPrice = getTopographicalSurveyPrice(selectedLocation, roundedSqm);
+              const basePrice = (toggleMeasuredSurvey && toggleMeasuredSurvey.checked)
+                  ? getMeasuredSurveyPrice(selectedLocation, roundedSqm)
+                  : 0;
+              const planningPrice = (togglePlanningReady && togglePlanningReady.checked)
+                  ? getTopographicalSurveyPrice(selectedLocation, roundedSqm)
+                  : 0;
         
               // Update breakdown visibility for planning
               if (planningBreakdown) {
@@ -2006,7 +2274,8 @@
                   name: data.userName,
                   email: data.userEmail,
                   phone: data.userPhone || '',
-                  address: data.userAddress
+                  address: data.userAddress,
+                  requestForDiscount: data.requestForDiscount === "1" || data.requestForDiscount === true
               },
         
               // Service selections
@@ -2091,8 +2360,30 @@
           pcdSubmitQuote(completeData)
           .then(function (result) {
               console.log('Success:', result);
-              // Show success toast
-              pcxSimpleShowToast('Success!', "Your quote request has been submitted successfully. We'll contact you soon!", 'success');
+
+              var pricing = completeData.pricing || {};
+              var services = completeData.services || {};
+              var lines = [];
+              if (services.measuredSurvey && services.measuredSurvey.selected) {
+                  lines.push({ label: 'Measured survey', value: pcxFormatMoney(pricing.basePrice) });
+              }
+              if (services.topographicalSurvey && services.topographicalSurvey.selected) {
+                  lines.push({ label: 'Topographical survey', value: pcxFormatMoney(pricing.topographicalSurvey) });
+              }
+              if (services.existingDrawingsPrep && services.existingDrawingsPrep.selected) {
+                  lines.push({ label: 'Existing drawings prep', value: pcxFormatMoney(pricing.existingDrawingsPrep) });
+              }
+              if (services.proposedDrawingsPrep && services.proposedDrawingsPrep.selected) {
+                  lines.push({ label: 'Proposed drawings prep', value: pcxFormatMoney(pricing.proposedDrawingsPrep) });
+              }
+
+              pcxShowQuotePricePopup({
+                  total: pricing.totalPrice,
+                  quoteOnRequest: false,
+                  lines: lines,
+                  message: "Your quote request has been submitted successfully. We'll contact you soon!"
+              });
+
               // Reset the form
               document.getElementById('pricingForm').reset();
               // Reset toggles to default state (Measured Survey checked, others unchecked)
@@ -2731,7 +3022,7 @@
       }
   
       .pcx-calculator .pcx-price {
-        display: flex;
+        display: none;
         align-items: baseline;
         gap: 10px;
         flex-wrap: wrap;
@@ -2795,7 +3086,63 @@
         margin-bottom: 14px;
         color: var(--text);
       }
-  
+
+      .pcx-calculator .pcx-discount-request {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin: 4px 0 8px;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .pcx-calculator .pcx-discount-request input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .pcx-calculator .pcx-discount-box {
+        width: 18px;
+        height: 18px;
+        margin-top: 2px;
+        flex-shrink: 0;
+        border: 2px solid #94a3b8;
+        border-radius: 4px;
+        background: #fff;
+        position: relative;
+      }
+
+      .pcx-calculator .pcx-discount-request input:checked + .pcx-discount-box {
+        background: var(--primary);
+        border-color: var(--primary);
+      }
+
+      .pcx-calculator .pcx-discount-request input:checked + .pcx-discount-box::after {
+        content: "";
+        position: absolute;
+        left: 5px;
+        top: 1px;
+        width: 4px;
+        height: 9px;
+        border: solid #fff;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+      }
+
+      .pcx-calculator .pcx-discount-text {
+        font-size: 0.92rem;
+        font-weight: 500;
+        color: var(--text);
+        line-height: 1.35;
+      }
+
+      .pcx-calculator .pcx-discount-optional {
+        color: var(--muted);
+        font-weight: 400;
+      }
+
       .pcx-calculator .pcx-service-error {
         display: none;
         margin-bottom: 14px;
@@ -2844,6 +3191,7 @@
       }
   
       .pcx-calculator .pcx-status.warning {
+        display: none !important;
         background: var(--warning-bg);
         color: var(--warning);
         border: 1px solid #f59e0b;
@@ -2858,7 +3206,7 @@
       .pcx-calculator .pcx-breakdown {
         border-top: 1px solid var(--border);
         padding-top: 16px;
-        display: grid;
+        display: none;
         gap: 8px;
       }
   
@@ -3115,7 +3463,7 @@
                         <div class="pcx-service-icon">🏢</div>
                         <div class="pcx-service-text">
                           <h4>Floor Plans</h4>
-                          <p>£40 each</p>
+                          <p>Per drawing</p>
                         </div>
                       </div>
                       <div class="pcx-qty">
@@ -3131,7 +3479,7 @@
                         <div class="pcx-service-icon">🏛️</div>
                         <div class="pcx-service-text">
                           <h4>Elevations</h4>
-                          <p>£40 each</p>
+                          <p>Per drawing</p>
                         </div>
                       </div>
                       <div class="pcx-qty">
@@ -3147,7 +3495,7 @@
                         <div class="pcx-service-icon">✂️</div>
                         <div class="pcx-service-text">
                           <h4>Sections</h4>
-                          <p>£40 each</p>
+                          <p>Per drawing</p>
                         </div>
                       </div>
                       <div class="pcx-qty">
@@ -3163,7 +3511,7 @@
                         <div class="pcx-service-icon">🏠</div>
                         <div class="pcx-service-text">
                           <h4>Roof Plans</h4>
-                          <p>£40 each</p>
+                          <p>Per drawing</p>
                         </div>
                       </div>
                       <div class="pcx-qty">
@@ -3179,7 +3527,7 @@
                         <div class="pcx-service-icon">🗺️</div>
                         <div class="pcx-service-text">
                           <h4>Topographical Plans</h4>
-                          <p>£40 each</p>
+                          <p>Per drawing</p>
                         </div>
                       </div>
                       <div class="pcx-qty">
@@ -3195,7 +3543,7 @@
                         <div class="pcx-service-icon">🧱</div>
                         <div class="pcx-service-text">
                           <h4>Interior Elevations</h4>
-                          <p>£20 each</p>
+                          <p>Per drawing</p>
                         </div>
                       </div>
                       <div class="pcx-qty">
@@ -3211,7 +3559,7 @@
                         <div class="pcx-service-icon">📍</div>
                         <div class="pcx-service-text">
                           <h4>Basic Site Plans</h4>
-                          <p>£100 each</p>
+                          <p>Per drawing</p>
                         </div>
                       </div>
                       <div class="pcx-qty">
@@ -3379,7 +3727,7 @@
                         <div class="pcx-service-icon">🏢</div>
                         <div class="pcx-service-text">
                           <h4>Floor Plans Affected</h4>
-                          <p>£30 each</p>
+                          <p>Per drawing</p>
                         </div>
                       </div>
                       <div class="pcx-qty">
@@ -3395,7 +3743,7 @@
                         <div class="pcx-service-icon">🏛️</div>
                         <div class="pcx-service-text">
                           <h4>Elevations Affected</h4>
-                          <p>£30 each</p>
+                          <p>Per drawing</p>
                         </div>
                       </div>
                       <div class="pcx-qty">
@@ -3411,7 +3759,7 @@
                         <div class="pcx-service-icon">✂️</div>
                         <div class="pcx-service-text">
                           <h4>Sections Affected</h4>
-                          <p>£30 each</p>
+                          <p>Per drawing</p>
                         </div>
                       </div>
                       <div class="pcx-qty">
@@ -3427,7 +3775,7 @@
                         <div class="pcx-service-icon">🏠</div>
                         <div class="pcx-service-text">
                           <h4>Roof Plans Affected</h4>
-                          <p>£30 each</p>
+                          <p>Per drawing</p>
                         </div>
                       </div>
                       <div class="pcx-qty">
@@ -3443,7 +3791,7 @@
                         <div class="pcx-service-icon">📍</div>
                         <div class="pcx-service-text">
                           <h4>Basic Site Plans Affected</h4>
-                          <p>£30 each</p>
+                          <p>Per drawing</p>
                         </div>
                       </div>
                       <div class="pcx-qty">
@@ -3459,7 +3807,7 @@
                         <div class="pcx-service-icon">🗺️</div>
                         <div class="pcx-service-text">
                           <h4>Topographical Plans Affected</h4>
-                          <p>£30 each</p>
+                          <p>Per drawing</p>
                         </div>
                       </div>
                       <div class="pcx-qty">
@@ -3475,7 +3823,7 @@
                         <div class="pcx-service-icon">🧱</div>
                         <div class="pcx-service-text">
                           <h4>Interior Elevations Affected</h4>
-                          <p>£10 each</p>
+                          <p>Per drawing</p>
                         </div>
                       </div>
                       <div class="pcx-qty">
@@ -3491,7 +3839,7 @@
                         <div class="pcx-service-icon">📌</div>
                         <div class="pcx-service-text">
                           <h4>Basic Location / Site Plans Affected</h4>
-                          <p>£20 each</p>
+                          <p>Per drawing</p>
                         </div>
                       </div>
                       <div class="pcx-qty">
@@ -3617,6 +3965,11 @@
                   <input type="text" id="pcxUserAddress" placeholder="Enter property or site address">
                   <span class="pcx-error">Please enter the address.</span>
                 </div>
+                <label class="pcx-discount-request" for="pcxRequestForDiscount">
+                  <input type="checkbox" id="pcxRequestForDiscount" value="1">
+                  <span class="pcx-discount-box" aria-hidden="true"></span>
+                  <span class="pcx-discount-text">Request For Discount <span class="pcx-discount-optional">(optional)</span></span>
+                </label>
                 <div class="pcd-hp" aria-hidden="true">
                   <label for="pcxHpWebsite">Website</label>
                   <input type="text" id="pcxHpWebsite" tabindex="-1" autocomplete="off" value="">
@@ -3711,6 +4064,7 @@
           userEmail: root.querySelector("#pcxUserEmail"),
           userPhone: root.querySelector("#pcxUserPhone"),
           userAddress: root.querySelector("#pcxUserAddress"),
+          requestForDiscount: root.querySelector("#pcxRequestForDiscount"),
           existingComplexityGroup: root.querySelector('[data-role="existing-complexity-group"]'),
           proposedScopeGroup: root.querySelector('[data-role="proposed-scope-group"]'),
           clearInstructions: root.querySelector("#clearInstructionsProvided"),
@@ -4078,8 +4432,12 @@
   
           els.selectionPill.textContent = locationLabel + " • " + pillSize;
   
-          const measuredSurveyTotal = getMeasuredSurveyPrice(location, roundedSqm);
-          const topographicalSurveyTotal = getTopographicalSurveyPrice(location, roundedSqm);
+          const measuredSurveyTotal = els.toggleMeasured.checked
+            ? getMeasuredSurveyPrice(location, roundedSqm)
+            : 0;
+          const topographicalSurveyTotal = els.toggleTopo.checked
+            ? getTopographicalSurveyPrice(location, roundedSqm)
+            : 0;
   
           let existingResult = {
             askForQuote: false,
@@ -4266,7 +4624,8 @@
               name: els.userName.value.trim(),
               email: els.userEmail.value.trim(),
               phone: els.userPhone.value.trim(),
-              address: els.userAddress.value.trim()
+              address: els.userAddress.value.trim(),
+              requestForDiscount: !!(els.requestForDiscount && els.requestForDiscount.checked)
             },
             meta: {
               calculatorMode: "complex",
@@ -4433,7 +4792,39 @@
   
           pcdSubmitQuote(payload)
             .then(function () {
-              showToast("Success!", "Your quote request has been submitted successfully. We'll contact you soon!", "success");
+              var pricing = payload.pricing || {};
+              var lines = [];
+              if (payload.services && payload.services.measuredSurvey && payload.services.measuredSurvey.selected) {
+                lines.push({
+                  label: "Measured survey",
+                  value: pricing.measuredSurvey == null ? "Price on request" : pcxFormatMoney(pricing.measuredSurvey)
+                });
+              }
+              if (payload.services && payload.services.topographicalSurvey && payload.services.topographicalSurvey.selected) {
+                lines.push({
+                  label: "Topographical survey",
+                  value: pricing.topographicalSurvey == null ? "Price on request" : pcxFormatMoney(pricing.topographicalSurvey)
+                });
+              }
+              if (payload.services && payload.services.existingDrawings && payload.services.existingDrawings.selected) {
+                lines.push({
+                  label: "Existing drawings",
+                  value: pricing.existingDrawings == null ? "Price on request" : pcxFormatMoney(pricing.existingDrawings)
+                });
+              }
+              if (payload.services && payload.services.proposedDrawings && payload.services.proposedDrawings.selected) {
+                lines.push({
+                  label: "Proposed drawings",
+                  value: pricing.proposedDrawings == null ? "Price on request" : pcxFormatMoney(pricing.proposedDrawings)
+                });
+              }
+
+              pcxShowQuotePricePopup({
+                total: pricing.grandTotal,
+                quoteOnRequest: !!(payload.meta && payload.meta.quoteOnRequest),
+                lines: lines,
+                message: "Your quote request has been submitted successfully. We'll contact you soon!"
+              });
               resetForm();
             })
             .catch(function (error) {

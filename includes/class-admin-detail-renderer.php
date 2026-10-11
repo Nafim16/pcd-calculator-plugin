@@ -227,6 +227,7 @@ class PCD_Calculator_Admin_Detail_Renderer {
 				__( 'Email', 'pcd-pricing-calculator' )   => self::email_link( self::str( $contact, 'email' ) ),
 				__( 'Phone', 'pcd-pricing-calculator' )     => self::str( $contact, 'phone' ),
 				__( 'Address', 'pcd-pricing-calculator' )   => self::str( $contact, 'address' ),
+				__( 'Request for discount', 'pcd-pricing-calculator' ) => self::pill_yes_no( ! empty( $contact['requestForDiscount'] ) ),
 			)
 		);
 		self::card(

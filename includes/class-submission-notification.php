@@ -127,6 +127,12 @@ class PCD_Calculator_Submission_Notification {
 
 		$lines[] = sprintf( __( 'Address: %s', 'pcd-pricing-calculator' ), $row->contact_address );
 
+		$payload = PCD_Calculator_Submission_Repository::decode_payload( $row );
+		$contact = isset( $payload['contact'] ) && is_array( $payload['contact'] ) ? $payload['contact'] : array();
+		if ( ! empty( $contact['requestForDiscount'] ) ) {
+			$lines[] = __( 'Request for discount: Yes', 'pcd-pricing-calculator' );
+		}
+
 		if ( ! empty( $row->location_label ) ) {
 			$lines[] = sprintf( __( 'Location: %s', 'pcd-pricing-calculator' ), $row->location_label );
 		}

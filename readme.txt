@@ -4,7 +4,7 @@ Tags: calculator, pricing, quotes, survey, architectural drawings
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 1.1.2
+Stable tag: 2.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -95,6 +95,11 @@ For production sites, keep WordPress and PHP updated and consider additional ant
 
 == Changelog ==
 
+= 2.0.0 =
+* Hide live prices until after successful submission (price reveal popup)
+* Optional “Request For Discount” checkbox on quote forms
+* Security hardening, email notifications, drawing pricing admin
+
 = 1.1.2 =
 * Version bump
 * Security: stored XSS fixes in admin detail view, rate limiting, honeypot, field length limits
@@ -124,6 +129,9 @@ WordPress `wp_mail()` depends on server configuration. Install and configure an 
 No. Submissions are only visible in the WordPress admin to users with `manage_options`.
 
 == Upgrade Notice ==
+
+= 2.0.0 =
+Major update: prices are shown after submission via popup, plus optional discount request. Re-upload the full plugin folder.
 
 = 1.1.2 =
 Recommended update: includes security hardening and email notifications. Re-upload the plugin folder or update via your deployment process.

@@ -147,7 +147,7 @@
     var sub = input.closest('.pcx-subservice');
     if (!sub) return;
     var p = sub.querySelector('.pcx-service-text p');
-    if (p) p.textContent = '£' + Math.round(amount) + ' each';
+    if (p) p.textContent = 'Per drawing';
   }
 
   function refreshComplexPriceLabels() {
@@ -168,9 +168,7 @@
       if (!label) return;
       var text = label.querySelector('.checkbox-label');
       if (!text) return;
-      var base = text.textContent.replace(/\s*\(£[\d,]+\)\s*$/, '').trim();
-      var price = getSimpleProposedPrice(cb.id);
-      text.textContent = base + ' (£' + Math.round(price) + ')';
+      text.textContent = text.textContent.replace(/\s*\(£[\d,]+\)\s*$/, '').trim();
     });
   }
 

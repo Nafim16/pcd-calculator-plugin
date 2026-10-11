@@ -2,7 +2,7 @@
 /**
  * Plugin Name: PCD Pricing Calculator
  * Description: Embeds the PCD simple/complex pricing calculator and stores quote submissions in WordPress.
- * Version: 1.1.2
+ * Version: 2.0.0
  * Author: ByteBlazeIT
  * Author URI: https://byteblazeit.com/
  * Text Domain: pcd-pricing-calculator
@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'PCD_CALCULATOR_VERSION', '1.1.2' );
+define( 'PCD_CALCULATOR_VERSION', '2.0.0' );
 define( 'PCD_CALCULATOR_PLUGIN_FILE', __FILE__ );
 define( 'PCD_CALCULATOR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PCD_CALCULATOR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
