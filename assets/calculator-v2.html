@@ -38,19 +38,19 @@
         var listEl = modal.querySelector('[data-role="quote-price-breakdown"]');
         var msgEl = modal.querySelector('[data-role="quote-price-message"]');
 
+        var hidePrice = !!options.hidePrice;
         var quoteOnRequest = !!options.quoteOnRequest;
         if (totalEl) {
+          totalEl.style.display = hidePrice ? 'none' : '';
           totalEl.textContent = quoteOnRequest ? 'Price on request' : pcxFormatMoney(options.total);
         }
         if (labelEl) {
+          labelEl.style.display = hidePrice ? 'none' : '';
           labelEl.textContent = quoteOnRequest ? 'Manual quote required' : 'Your estimated total';
-        }
-        if (msgEl) {
-          msgEl.textContent = options.message || "Your quote request has been submitted successfully. We'll contact you soon!";
         }
         if (listEl) {
           listEl.innerHTML = '';
-          var lines = Array.isArray(options.lines) ? options.lines : [];
+          var lines = hidePrice ? [] : (Array.isArray(options.lines) ? options.lines : []);
           lines.forEach(function (line) {
             if (!line || !line.label) return;
             var row = document.createElement('div');
@@ -64,6 +64,9 @@
             listEl.appendChild(row);
           });
           listEl.style.display = lines.length ? '' : 'none';
+        }
+        if (msgEl) {
+          msgEl.textContent = options.message || "Your quote request has been submitted successfully. We'll contact you soon!";
         }
 
         modal.classList.add('is-open');
@@ -1473,6 +1476,10 @@
                     <input type="radio" name="location" id="londonSouthWest" value="londonSouthWest">
                     <span>London: South, SE, SW & West (W, WC)</span>
                   </label>
+                  <label class="radio-card" for="manchester">
+                    <input type="radio" name="location" id="manchester" value="manchester">
+                    <span>Manchester</span>
+                  </label>
                 </div>
               </div>
         
@@ -1669,7 +1676,8 @@
             "locationRateMultipliers": {
               "londonNorthEast": 1.0,
               "londonSouthWest": 1.25,
-              "homeCounties": 1.5
+              "homeCounties": 1.5,
+              "manchester": 1.5
             },
             "measuredSurveyUnitFactors": {
               "upTo150": 1.5,
@@ -1685,7 +1693,8 @@
             "locations": [
               { "id": "londonNorthEast", "label": "London: North, NW & East (E, EC)" },
               { "id": "londonSouthWest", "label": "London: South, SE, SW & West (W, WC)" },
-              { "id": "homeCounties", "label": "Home Counties" }
+              { "id": "homeCounties", "label": "Home Counties" },
+              { "id": "manchester", "label": "Manchester" }
             ],
             "sizeBands": ["50-100","100-150","150-200","200-300","300-400","400-500"],
             "cta": {
@@ -2307,7 +2316,8 @@
                   selected: data.location,
                   label: data.location === "homeCounties" ? "Home Counties" :
                          data.location === "londonNorthEast" ? "London: North, NW & East (E, EC)" :
-                         data.location === "londonSouthWest" ? "London: South, SE, SW & West (W, WC)" : data.location
+                         data.location === "londonSouthWest" ? "London: South, SE, SW & West (W, WC)" :
+                         data.location === "manchester" ? "Manchester" : data.location
               },
         
               propertySize: {
@@ -2342,7 +2352,8 @@
                   address: data.userAddress,
                   location: data.location === "homeCounties" ? "Home Counties" :
                            data.location === "londonNorthEast" ? "London: North, NW & East (E, EC)" :
-                           data.location === "londonSouthWest" ? "London: South, SE, SW & West (W, WC)" : data.location,
+                           data.location === "londonSouthWest" ? "London: South, SE, SW & West (W, WC)" :
+                           data.location === "manchester" ? "Manchester" : data.location,
                   size: (data.sizeM2 ? data.sizeM2 : '') + " sqm",
                   servicesCount: [
                       data.measuredSurvey === "1" ? "Measured Survey" : null,
@@ -2363,21 +2374,25 @@
 
               var pricing = completeData.pricing || {};
               var services = completeData.services || {};
+              var isManchester = completeData.location && completeData.location.selected === 'manchester';
               var lines = [];
-              if (services.measuredSurvey && services.measuredSurvey.selected) {
-                  lines.push({ label: 'Measured survey', value: pcxFormatMoney(pricing.basePrice) });
-              }
-              if (services.topographicalSurvey && services.topographicalSurvey.selected) {
-                  lines.push({ label: 'Topographical survey', value: pcxFormatMoney(pricing.topographicalSurvey) });
-              }
-              if (services.existingDrawingsPrep && services.existingDrawingsPrep.selected) {
-                  lines.push({ label: 'Existing drawings prep', value: pcxFormatMoney(pricing.existingDrawingsPrep) });
-              }
-              if (services.proposedDrawingsPrep && services.proposedDrawingsPrep.selected) {
-                  lines.push({ label: 'Proposed drawings prep', value: pcxFormatMoney(pricing.proposedDrawingsPrep) });
+              if (!isManchester) {
+                  if (services.measuredSurvey && services.measuredSurvey.selected) {
+                      lines.push({ label: 'Measured survey', value: pcxFormatMoney(pricing.basePrice) });
+                  }
+                  if (services.topographicalSurvey && services.topographicalSurvey.selected) {
+                      lines.push({ label: 'Topographical survey', value: pcxFormatMoney(pricing.topographicalSurvey) });
+                  }
+                  if (services.existingDrawingsPrep && services.existingDrawingsPrep.selected) {
+                      lines.push({ label: 'Existing drawings prep', value: pcxFormatMoney(pricing.existingDrawingsPrep) });
+                  }
+                  if (services.proposedDrawingsPrep && services.proposedDrawingsPrep.selected) {
+                      lines.push({ label: 'Proposed drawings prep', value: pcxFormatMoney(pricing.proposedDrawingsPrep) });
+                  }
               }
 
               pcxShowQuotePricePopup({
+                  hidePrice: isManchester,
                   total: pricing.totalPrice,
                   quoteOnRequest: false,
                   lines: lines,
@@ -3905,6 +3920,10 @@
                   <input type="radio" name="pcx-location" value="londonSouthWest">
                   <span>London: South, SE, SW & West (W, WC)</span>
                 </label>
+                <label class="pcx-radio-card">
+                  <input type="radio" name="pcx-location" value="manchester">
+                  <span>Manchester</span>
+                </label>
               </div>
             </div>
   
@@ -4019,7 +4038,8 @@
           locationRateMultipliers: {
             londonNorthEast: 1.0,
             londonSouthWest: 1.25,
-            homeCounties: 1.5
+            homeCounties: 1.5,
+            manchester: 1.5
           },
           measuredSurveyUnitFactors: {
             upTo150: 1.5,
@@ -4035,7 +4055,8 @@
           locationLabels: {
             homeCounties: "Home Counties",
             londonNorthEast: "London: North, NW & East (E, EC)",
-            londonSouthWest: "London: South, SE, SW & West (W, WC)"
+            londonSouthWest: "London: South, SE, SW & West (W, WC)",
+            manchester: "Manchester"
           }
         };
   
@@ -4793,33 +4814,37 @@
           pcdSubmitQuote(payload)
             .then(function () {
               var pricing = payload.pricing || {};
+              var isManchester = payload.meta && payload.meta.location === 'manchester';
               var lines = [];
-              if (payload.services && payload.services.measuredSurvey && payload.services.measuredSurvey.selected) {
-                lines.push({
-                  label: "Measured survey",
-                  value: pricing.measuredSurvey == null ? "Price on request" : pcxFormatMoney(pricing.measuredSurvey)
-                });
-              }
-              if (payload.services && payload.services.topographicalSurvey && payload.services.topographicalSurvey.selected) {
-                lines.push({
-                  label: "Topographical survey",
-                  value: pricing.topographicalSurvey == null ? "Price on request" : pcxFormatMoney(pricing.topographicalSurvey)
-                });
-              }
-              if (payload.services && payload.services.existingDrawings && payload.services.existingDrawings.selected) {
-                lines.push({
-                  label: "Existing drawings",
-                  value: pricing.existingDrawings == null ? "Price on request" : pcxFormatMoney(pricing.existingDrawings)
-                });
-              }
-              if (payload.services && payload.services.proposedDrawings && payload.services.proposedDrawings.selected) {
-                lines.push({
-                  label: "Proposed drawings",
-                  value: pricing.proposedDrawings == null ? "Price on request" : pcxFormatMoney(pricing.proposedDrawings)
-                });
+              if (!isManchester) {
+                if (payload.services && payload.services.measuredSurvey && payload.services.measuredSurvey.selected) {
+                  lines.push({
+                    label: "Measured survey",
+                    value: pricing.measuredSurvey == null ? "Price on request" : pcxFormatMoney(pricing.measuredSurvey)
+                  });
+                }
+                if (payload.services && payload.services.topographicalSurvey && payload.services.topographicalSurvey.selected) {
+                  lines.push({
+                    label: "Topographical survey",
+                    value: pricing.topographicalSurvey == null ? "Price on request" : pcxFormatMoney(pricing.topographicalSurvey)
+                  });
+                }
+                if (payload.services && payload.services.existingDrawings && payload.services.existingDrawings.selected) {
+                  lines.push({
+                    label: "Existing drawings",
+                    value: pricing.existingDrawings == null ? "Price on request" : pcxFormatMoney(pricing.existingDrawings)
+                  });
+                }
+                if (payload.services && payload.services.proposedDrawings && payload.services.proposedDrawings.selected) {
+                  lines.push({
+                    label: "Proposed drawings",
+                    value: pricing.proposedDrawings == null ? "Price on request" : pcxFormatMoney(pricing.proposedDrawings)
+                  });
+                }
               }
 
               pcxShowQuotePricePopup({
+                hidePrice: isManchester,
                 total: pricing.grandTotal,
                 quoteOnRequest: !!(payload.meta && payload.meta.quoteOnRequest),
                 lines: lines,
